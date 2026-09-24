@@ -1,6 +1,6 @@
 # iPad App Use Cases for PencilKit and PaperKit
 
-This document converts the existing feature ideas into formal use-case specifications and adds a capability matrix that maps the PencilKit/PaperKit-based feature set used across the product.
+This document converts the existing feature ideas into formal use-case specifications and adds a capability matrix that maps the PencilKit/PaperKit foundation of the app together with the adjacent editor features built around it.
 
 ## Scope
 
@@ -208,57 +208,57 @@ This document converts the existing feature ideas into formal use-case specifica
 
 ## Capability-to-Use-Case Matrix
 
-The matrix below maps the documented capabilities and closely related implementation touchpoints in this product definition to the formal use cases that depend on them.
+The matrix below maps the documented capabilities and implementation touchpoints to the formal use cases that depend on them, and it distinguishes between direct framework-level items and product-layer editor behaviors.
 
-| Capability | Framework area | Use cases |
-| --- | --- | --- |
-| Apple Pencil and finger input | PencilKit input | UC-01 |
-| `PKCanvasView` canvas rendering | PencilKit canvas | UC-01, UC-03, UC-04 |
-| `PKToolPicker` and tool selection | PencilKit tools | UC-01, UC-02 |
-| `PKDrawing` save/restore | PencilKit persistence | UC-01, UC-14 |
-| Undo and redo | PencilKit editing | UC-01, UC-04 |
-| Drawing over existing content | PencilKit/PaperKit overlay | UC-02, UC-07 |
-| Highlighting and underlining | Document markup | UC-02, UC-07 |
-| Export annotated output | Sharing/export | UC-02, UC-11, UC-15 |
-| Pencil drawing tools | PencilKit tools | UC-03 |
-| Ruler support | Precision drawing | UC-03 |
-| Shape placement and editing | Structured drawing | UC-03, UC-06, UC-12 |
-| Selection, move, and resize interactions | Editing transforms | UC-03, UC-04, UC-10, UC-12 |
-| Lasso and selection tools | PencilKit selection | UC-04 |
-| Stroke-level editing | PencilKit editing | UC-04 |
-| Copy and paste | Editing utilities | UC-04 |
-| Object transforms | Editing transforms | UC-04, UC-12 |
-| Freeform drawing | Canvas creation | UC-05, UC-12 |
-| Text boxes and text blocks | Paper-style composition | UC-05, UC-09, UC-12 |
-| Shapes and adornments | Paper-style composition | UC-05, UC-06, UC-12 |
-| Image insertion and embedded images | Media placement | UC-05, UC-09, UC-12 |
-| Canvas layout and multi-element editing | Paper-style composition | UC-05, UC-12 |
-| Image markup | Markup workflows | UC-06 |
-| Image overlays | Markup workflows | UC-10 |
-| Arrows and geometric shapes | Review markup | UC-06 |
-| Text annotations | Review/approval markup | UC-06, UC-11 |
-| Loupe support and magnification | Precision review | UC-06, UC-13 |
-| Precise placement and adjustment | Precision review | UC-06 |
-| Precise drawing interactions | Precision review | UC-13 |
-| Markup over documents and pages | Document annotation | UC-07 |
-| Handwritten comments and callouts | Document annotation | UC-07 |
-| Persistent save/reload of markup data | Persistence | UC-07, UC-14 |
-| Handwriting recognition | Recognition | UC-08 |
-| Scribble-related text input workflows | Recognition/input | UC-08 |
-| Text extraction from handwritten content | Recognition/search | UC-08 |
-| Hyperlinks | Paper-style composition | UC-09 |
-| Structured page composition | Paper-style composition | UC-09 |
-| Color-coded markup | Specialized annotation | UC-10 |
-| Shape markers | Specialized annotation | UC-10 |
-| Typed and handwritten notes | Mixed input | UC-10 |
-| High-fidelity ink capture | Signature workflow | UC-11 |
-| Signature persistence | Signature workflow | UC-11 |
-| Zoom and scroll | Navigation/review | UC-13 |
-| Hover previews on supported devices | Device-assisted review | UC-13 |
-| Paper markup persistence | Persistence | UC-14 |
-| Saved document version compatibility | Persistence | UC-14 |
-| Render to image | Export | UC-15 |
-| Export to shareable formats, including PDF | Export | UC-15 |
+| Capability | Type | Framework area | Use cases |
+| --- | --- | --- | --- |
+| Apple Pencil and finger input | Framework capability | PencilKit input | UC-01 |
+| `PKCanvasView` canvas rendering | Framework API | PencilKit canvas | UC-01, UC-03, UC-04 |
+| `PKToolPicker` and tool selection | Framework API | PencilKit tools | UC-01, UC-02 |
+| `PKDrawing` save/restore | Framework API | PencilKit persistence | UC-01, UC-14 |
+| Undo and redo | Framework capability | PencilKit editing | UC-01, UC-04 |
+| Drawing over existing content | Framework capability | PencilKit/PaperKit overlay | UC-02, UC-07 |
+| Highlighting and underlining | Product-layer behavior | Document markup | UC-02, UC-07 |
+| Export annotated output | Product-layer behavior | Sharing/export | UC-02, UC-11, UC-15 |
+| Pencil drawing tools | Framework capability | PencilKit tools | UC-03 |
+| Ruler support | Framework capability | Precision drawing | UC-03 |
+| Shape placement and editing | Product-layer behavior | Structured drawing | UC-03, UC-06, UC-12 |
+| Selection, move, and resize interactions | Product-layer behavior | Editing transforms | UC-03, UC-04, UC-10, UC-12 |
+| Lasso and selection tools | Framework capability | PencilKit selection | UC-04 |
+| Stroke-level editing | Product-layer behavior | PencilKit editing | UC-04 |
+| Copy and paste | Product-layer behavior | Editing utilities | UC-04 |
+| Object transforms | Product-layer behavior | Editing transforms | UC-04, UC-12 |
+| Freeform drawing | Product-layer behavior | Canvas creation | UC-05, UC-12 |
+| Text boxes and text blocks | Product-layer behavior | Paper-style composition | UC-05, UC-09, UC-12 |
+| Shapes and adornments | Product-layer behavior | Paper-style composition | UC-05, UC-06, UC-12 |
+| Image insertion and embedded images | Product-layer behavior | Media placement | UC-05, UC-09, UC-12 |
+| Canvas layout and multi-element editing | Product-layer behavior | Paper-style composition | UC-05, UC-12 |
+| Image markup | Product-layer behavior | Markup workflows | UC-06 |
+| Image overlays | Product-layer behavior | Markup workflows | UC-10 |
+| Arrows and geometric shapes | Product-layer behavior | Review markup | UC-06 |
+| Text annotations | Product-layer behavior | Review/approval markup | UC-06, UC-11 |
+| Loupe support and magnification | Framework capability | Precision review | UC-06, UC-13 |
+| Precise placement and adjustment | Product-layer behavior | Precision review | UC-06 |
+| Precise drawing interactions | Framework capability | Precision review | UC-13 |
+| Markup over documents and pages | Product-layer behavior | Document annotation | UC-07 |
+| Handwritten comments and callouts | Product-layer behavior | Document annotation | UC-07 |
+| Persistent save/reload of markup data | Product-layer behavior | Persistence | UC-07, UC-14 |
+| Handwriting recognition | Framework capability | Recognition | UC-08 |
+| Scribble-related text input workflows | Framework capability | Recognition/input | UC-08 |
+| Text extraction from handwritten content | Product-layer behavior | Recognition/search | UC-08 |
+| Hyperlinks | Product-layer behavior | Paper-style composition | UC-09 |
+| Structured page composition | Product-layer behavior | Paper-style composition | UC-09 |
+| Color-coded markup | Product-layer behavior | Specialized annotation | UC-10 |
+| Shape markers | Product-layer behavior | Specialized annotation | UC-10 |
+| Typed and handwritten notes | Product-layer behavior | Mixed input | UC-10 |
+| High-fidelity ink capture | Framework capability | Signature workflow | UC-11 |
+| Signature persistence | Product-layer behavior | Signature workflow | UC-11 |
+| Zoom and scroll | Framework capability | Navigation/review | UC-13 |
+| Hover previews on supported devices | Framework capability | Device-assisted review | UC-13 |
+| Paper markup persistence | Product-layer behavior | Persistence | UC-14 |
+| Saved document version compatibility | Product-layer behavior | Persistence | UC-14 |
+| Render to image | Product-layer behavior | Export | UC-15 |
+| Export to shareable formats, including PDF | Product-layer behavior | Export | UC-15 |
 
 ## Suggested Product Concept
 
