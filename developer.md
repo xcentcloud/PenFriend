@@ -220,7 +220,7 @@ The matrix entries below map the documented capabilities and implementation touc
 - **Pencil drawing tools** — PencilKit tools — **Use cases:** UC-03
 - **Ruler support** — Precision drawing — **Use cases:** UC-03
 - **Lasso and selection tools** — PencilKit selection — **Use cases:** UC-04
-- **Loupe support and magnification** — Precision review — **Use cases:** UC-06, UC-13
+- **Loupe support** — Precision review — **Use cases:** UC-06, UC-13
 - **Precise drawing interactions** — Precision review — **Use cases:** UC-13
 - **Handwriting recognition** — Recognition — **Use cases:** UC-08
 - **Scribble-related text input workflows** — Recognition/input — **Use cases:** UC-08
