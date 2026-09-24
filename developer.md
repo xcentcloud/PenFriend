@@ -208,17 +208,17 @@ This document converts the existing feature ideas into formal use-case specifica
 
 ## Capability-to-Use-Case Matrix
 
-The matrix below maps every major PencilKit/PaperKit-oriented capability explicitly listed in the **Capabilities** sections above to the formal use cases that depend on it.
+The matrix below groups the documented PencilKit/PaperKit-oriented capabilities into shared capability families and maps those families to the formal use cases that depend on them.
 
 | Capability | Framework area | Use cases |
 | --- | --- | --- |
-| Apple Pencil and finger input | PencilKit input | UC-01, UC-11 |
+| Apple Pencil and finger input | PencilKit input | UC-01 |
 | `PKCanvasView` canvas rendering | PencilKit canvas | UC-01, UC-03, UC-04 |
-| `PKToolPicker` tool selection | PencilKit tools | UC-01, UC-02 |
+| `PKToolPicker` tool selection | PencilKit tools | UC-01 |
 | `PKDrawing` save/restore | PencilKit persistence | UC-01, UC-14 |
 | Undo and redo | PencilKit editing | UC-01, UC-04 |
 | Drawing over existing content | PencilKit/PaperKit overlay | UC-02, UC-07 |
-| Pen, marker, pencil, and eraser tools | PencilKit tools | UC-02, UC-03 |
+| Pen, marker, pencil, and eraser tools | PencilKit tools | UC-02 |
 | Highlighting and underlining | Document markup | UC-02, UC-07 |
 | Export annotated output | Sharing/export | UC-02, UC-11, UC-15 |
 | Ruler support | Precision drawing | UC-03 |
