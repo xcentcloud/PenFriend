@@ -35,7 +35,7 @@ This document converts the existing feature ideas into formal use-case specifica
 - **Exceptions:**
   - If the source document cannot be rendered, the system blocks annotation and shows an import error.
   - If export fails, the system preserves the annotation session for retry.
-- **Capabilities:** Drawing over existing content, pen/marker/pencil/eraser tools, highlighting/underlining, export annotated output
+- **Capabilities:** Drawing over existing content, `PKToolPicker`, pen/marker/pencil/eraser tools, highlighting/underlining, export annotated output
 
 ### UC-03: Diagram Creation and Precision Sketching
 - **Actor:** Designer, engineer, or planner
@@ -48,7 +48,7 @@ This document converts the existing feature ideas into formal use-case specifica
 - **Exceptions:**
   - If precision aids are disabled on the device, the system continues with standard drawing interactions.
   - If a shape cannot be edited as a discrete object, the system treats it as stroke content.
-- **Capabilities:** Pencil drawing tools, ruler support, shape placement/editing, selection/move/resize
+- **Capabilities:** `PKCanvasView`, pencil drawing tools, ruler support, shape placement/editing, selection/move/resize
 
 ### UC-04: Stroke Selection and Editing
 - **Actor:** Any user refining a drawing
@@ -61,7 +61,7 @@ This document converts the existing feature ideas into formal use-case specifica
 - **Exceptions:**
   - If no strokes are selected, edit commands remain disabled.
   - If paste content is unavailable, duplicate and paste actions are skipped.
-- **Capabilities:** Lasso/selection tools, stroke-level editing, copy/paste, transforms
+- **Capabilities:** `PKCanvasView`, lasso/selection tools, stroke-level editing, copy/paste, transforms
 
 ### UC-05: Mixed Media Brainstorming Canvas
 - **Actor:** Product, design, or workshop participant
@@ -208,7 +208,7 @@ This document converts the existing feature ideas into formal use-case specifica
 
 ## Capability-to-Use-Case Matrix
 
-The matrix below groups the documented PencilKit/PaperKit capabilities and the closely related product behaviors built on top of them, then maps those capability families to the formal use cases that depend on them.
+The matrix below maps the documented capabilities and closely related implementation touchpoints in this product definition to the formal use cases that depend on them.
 
 <table>
   <thead>
@@ -221,13 +221,13 @@ The matrix below groups the documented PencilKit/PaperKit capabilities and the c
   <tbody>
     <tr><td>Apple Pencil and finger input</td><td>PencilKit input</td><td>UC-01</td></tr>
     <tr><td><code>PKCanvasView</code> canvas rendering</td><td>PencilKit canvas</td><td>UC-01, UC-03, UC-04</td></tr>
-    <tr><td><code>PKToolPicker</code> tool selection</td><td>PencilKit tools</td><td>UC-01</td></tr>
+    <tr><td><code>PKToolPicker</code> and tool selection</td><td>PencilKit tools</td><td>UC-01, UC-02</td></tr>
     <tr><td><code>PKDrawing</code> save/restore</td><td>PencilKit persistence</td><td>UC-01, UC-14</td></tr>
     <tr><td>Undo and redo</td><td>PencilKit editing</td><td>UC-01, UC-04</td></tr>
     <tr><td>Drawing over existing content</td><td>PencilKit/PaperKit overlay</td><td>UC-02, UC-07</td></tr>
-    <tr><td>Pen, marker, pencil, and eraser tools</td><td>PencilKit tools</td><td>UC-02</td></tr>
     <tr><td>Highlighting and underlining</td><td>Document markup</td><td>UC-02, UC-07</td></tr>
     <tr><td>Export annotated output</td><td>Sharing/export</td><td>UC-02, UC-11, UC-15</td></tr>
+    <tr><td>Pencil drawing tools</td><td>PencilKit tools</td><td>UC-03</td></tr>
     <tr><td>Ruler support</td><td>Precision drawing</td><td>UC-03</td></tr>
     <tr><td>Shape placement and editing</td><td>Structured drawing</td><td>UC-03, UC-06, UC-12</td></tr>
     <tr><td>Selection, move, and resize interactions</td><td>Editing transforms</td><td>UC-03, UC-04, UC-10, UC-12</td></tr>
@@ -244,8 +244,7 @@ The matrix below groups the documented PencilKit/PaperKit capabilities and the c
     <tr><td>Image overlays</td><td>Markup workflows</td><td>UC-10</td></tr>
     <tr><td>Arrows and geometric shapes</td><td>Review markup</td><td>UC-06</td></tr>
     <tr><td>Text annotations</td><td>Review/approval markup</td><td>UC-06, UC-11</td></tr>
-    <tr><td>Magnification with loupes</td><td>Precision review</td><td>UC-06</td></tr>
-    <tr><td>Loupe support</td><td>Precision review</td><td>UC-13</td></tr>
+    <tr><td>Loupe support and magnification</td><td>Precision review</td><td>UC-06, UC-13</td></tr>
     <tr><td>Precise placement and adjustment</td><td>Precision review</td><td>UC-06</td></tr>
     <tr><td>Precise drawing interactions</td><td>Precision review</td><td>UC-13</td></tr>
     <tr><td>Markup over documents and pages</td><td>Document annotation</td><td>UC-07</td></tr>
