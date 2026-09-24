@@ -208,7 +208,7 @@ This document converts the existing feature ideas into formal use-case specifica
 
 ## Capability-to-Use-Case Matrix
 
-The matrix below groups the documented PencilKit/PaperKit-oriented capabilities into shared capability families and maps those families to the formal use cases that depend on them.
+The matrix below groups the documented PencilKit/PaperKit capabilities and the closely related product behaviors built on top of them, then maps those capability families to the formal use cases that depend on them.
 
 <table>
   <thead>
@@ -240,11 +240,14 @@ The matrix below groups the documented PencilKit/PaperKit-oriented capabilities 
     <tr><td>Shapes and adornments</td><td>Paper-style composition</td><td>UC-05, UC-06, UC-12</td></tr>
     <tr><td>Image insertion and embedded images</td><td>Media placement</td><td>UC-05, UC-09, UC-12</td></tr>
     <tr><td>Canvas layout and multi-element editing</td><td>Paper-style composition</td><td>UC-05, UC-12</td></tr>
-    <tr><td>Image markup and image overlays</td><td>Markup workflows</td><td>UC-06, UC-10</td></tr>
+    <tr><td>Image markup</td><td>Markup workflows</td><td>UC-06</td></tr>
+    <tr><td>Image overlays</td><td>Markup workflows</td><td>UC-10</td></tr>
     <tr><td>Arrows and geometric shapes</td><td>Review markup</td><td>UC-06</td></tr>
     <tr><td>Text annotations</td><td>Review/approval markup</td><td>UC-06, UC-11</td></tr>
-    <tr><td>Magnification with loupes</td><td>Precision review</td><td>UC-06, UC-13</td></tr>
-    <tr><td>Precise placement and adjustment</td><td>Precision review</td><td>UC-06, UC-13</td></tr>
+    <tr><td>Magnification with loupes</td><td>Precision review</td><td>UC-06</td></tr>
+    <tr><td>Loupe support</td><td>Precision review</td><td>UC-13</td></tr>
+    <tr><td>Precise placement and adjustment</td><td>Precision review</td><td>UC-06</td></tr>
+    <tr><td>Precise drawing interactions</td><td>Precision review</td><td>UC-13</td></tr>
     <tr><td>Markup over documents and pages</td><td>Document annotation</td><td>UC-07</td></tr>
     <tr><td>Handwritten comments and callouts</td><td>Document annotation</td><td>UC-07</td></tr>
     <tr><td>Persistent save/reload of markup data</td><td>Persistence</td><td>UC-07, UC-14</td></tr>
