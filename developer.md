@@ -174,8 +174,8 @@ This document converts the existing feature ideas into formal use-case specifica
 - **Primary flow:**
   1. The actor zooms and scrolls to the target area.
   2. The actor uses zoom, loupe, or hover assistance to improve readability and control.
-  3. The actor uses accessibility-oriented review aids such as VoiceOver-readable page context or larger inspection targets where supported.
-  4. The actor adds or adjusts annotations using supported accessible targeting controls, such as focusable annotation handles or announced placement targets.
+  3. The actor uses supported accessibility-oriented review aids, including VoiceOver-readable page context and larger inspection targets.
+  4. The actor adds or adjusts annotations using supported accessible targeting controls, including focusable annotation handles and announced placement targets.
   5. The system maintains annotation alignment at the current zoom level while preserving the accessible interaction path.
 - **Exceptions:**
   - If hover is unsupported on the device, the system continues without preview interactions.
