@@ -171,6 +171,7 @@ This document converts the existing feature ideas into formal use-case specifica
 ### UC-13: Detail Inspection and Accessible Review
 - **Actor:** Reviewer needing fine-grained inspection or device-assisted readability
 - **Preconditions:** Dense content or detailed artwork is open
+- **Accessibility scope:** Product-layer accessibility behaviors built around PencilKit/PaperKit surfaces, not framework guarantees by themselves
 - **Primary flow:**
   1. The actor zooms and scrolls to the target area.
   2. The actor uses zoom, loupe, or hover assistance to improve readability and control.
@@ -223,14 +224,11 @@ The matrix entries below map the documented capabilities and implementation touc
 - **Ruler support** — Precision drawing — **Use cases:** UC-03
 - **Lasso and selection tools** — PencilKit selection — **Use cases:** UC-04
 - **Loupe support** — Precision review — **Use cases:** UC-06, UC-13
-- **Precise drawing interactions** — Precision review — **Use cases:** UC-13
 - **Handwriting recognition** — Recognition — **Use cases:** UC-08
 - **Scribble-related text input workflows** — Recognition/input — **Use cases:** UC-08
 - **High-fidelity ink capture** — Signature workflow — **Use cases:** UC-11
 - **Zoom and scroll** — Navigation/review — **Use cases:** UC-13
 - **Hover previews on supported devices** — Device-assisted review — **Use cases:** UC-13
-- **Device-assisted review aids** — Device-assisted review — **Use cases:** UC-13
-- **Accessibility-oriented review aids** — Accessible review — **Use cases:** UC-13
 
 ### Product-Layer Editor Behaviors
 - **Highlighting and underlining** — Document markup — **Use cases:** UC-02, UC-07
@@ -250,6 +248,7 @@ The matrix entries below map the documented capabilities and implementation touc
 - **Arrows and geometric shapes** — Review markup — **Use cases:** UC-06
 - **Text annotations** — Review/approval markup — **Use cases:** UC-06, UC-11
 - **Precise placement and adjustment** — Precision review — **Use cases:** UC-06
+- **Precise drawing interactions** — Precision review — **Use cases:** UC-13
 - **Markup over documents and pages** — Document annotation — **Use cases:** UC-07
 - **Handwritten comments and callouts** — Document annotation — **Use cases:** UC-07
 - **Persistent save/reload of markup data** — Persistence — **Use cases:** UC-07, UC-14
@@ -261,6 +260,8 @@ The matrix entries below map the documented capabilities and implementation touc
 - **Typed and handwritten notes** — Mixed input — **Use cases:** UC-10
 - **Element repositioning and resizing** — Specialized annotation — **Use cases:** UC-10
 - **Signature persistence** — Signature workflow — **Use cases:** UC-11
+- **Device-assisted review aids** — Device-assisted review — **Use cases:** UC-13
+- **Accessibility-oriented review aids** — Accessible review — **Use cases:** UC-13
 - **Paper markup persistence** — Persistence — **Use cases:** UC-14
 - **Saved document version compatibility** — Persistence — **Use cases:** UC-14
 - **Render to image** — Export — **Use cases:** UC-15
