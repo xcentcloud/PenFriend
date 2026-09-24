@@ -167,18 +167,18 @@ This document converts the existing feature ideas into formal use-case specifica
   - If element overlap blocks editing, the system preserves z-order controls or selection fallback.
 - **Capabilities:** Freehand drawing, images, text boxes, shapes/adornments, multi-element page editing
 
-### UC-13: Detail Inspection and Precision Review
-- **Actor:** Reviewer needing fine-grained inspection
+### UC-13: Detail Inspection and Accessible Review
+- **Actor:** Reviewer needing fine-grained inspection or device-assisted readability
 - **Preconditions:** Dense content or detailed artwork is open
 - **Primary flow:**
   1. The actor zooms and scrolls to the target area.
-  2. The actor uses loupe or hover assistance where supported.
+  2. The actor uses zoom, loupe, or hover assistance to improve readability and control.
   3. The actor adds or adjusts precise annotations.
   4. The system maintains annotation alignment at the current zoom level.
 - **Exceptions:**
   - If hover is unsupported on the device, the system continues without preview interactions.
   - If zoom limits are reached, the system keeps the current viewport and preserves edit accuracy.
-- **Capabilities:** Zoom/scroll, loupe support, precise drawing interactions, hover previews
+- **Capabilities:** Zoom/scroll, loupe support, precise drawing interactions, hover previews, device-assisted review aids
 
 ### UC-14: Persistent Editable Workspaces
 - **Actor:** Returning user
