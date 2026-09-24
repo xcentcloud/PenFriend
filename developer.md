@@ -167,7 +167,7 @@ This document converts the existing feature ideas into formal use-case specifica
   - If element overlap blocks editing, the system preserves z-order controls or selection fallback.
 - **Capabilities:** Freehand drawing, images, text boxes, shapes/adornments, multi-element page editing
 
-### UC-13: Detail Inspection and Accessible Review
+### UC-13: Detail Inspection and Precision Review
 - **Actor:** Reviewer needing fine-grained inspection
 - **Preconditions:** Dense content or detailed artwork is open
 - **Primary flow:**
@@ -206,7 +206,7 @@ This document converts the existing feature ideas into formal use-case specifica
   - If sharing is cancelled, the system preserves the generated export locally when possible.
 - **Capabilities:** Render to image, export to shareable formats, save/distribute completed pages
 
-## Feature-to-Use-Case Matrix
+## Capability-to-Use-Case Matrix
 
 The matrix below maps every major PencilKit/PaperKit-oriented capability explicitly listed in the **Capabilities** sections above to the formal use cases that depend on it.
 
