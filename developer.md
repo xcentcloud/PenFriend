@@ -210,53 +210,53 @@ This document converts the existing feature ideas into formal use-case specifica
 
 The matrix below groups the documented PencilKit/PaperKit-oriented capabilities into shared capability families and maps those families to the formal use cases that depend on them.
 
-| Capability | Framework area | Use cases |
-| --- | --- | --- |
-| Apple Pencil and finger input | PencilKit input | UC-01 |
-| `PKCanvasView` canvas rendering | PencilKit canvas | UC-01, UC-03, UC-04 |
-| `PKToolPicker` tool selection | PencilKit tools | UC-01 |
-| `PKDrawing` save/restore | PencilKit persistence | UC-01, UC-14 |
-| Undo and redo | PencilKit editing | UC-01, UC-04 |
-| Drawing over existing content | PencilKit/PaperKit overlay | UC-02, UC-07 |
-| Pen, marker, pencil, and eraser tools | PencilKit tools | UC-02 |
-| Highlighting and underlining | Document markup | UC-02, UC-07 |
-| Export annotated output | Sharing/export | UC-02, UC-11, UC-15 |
-| Ruler support | Precision drawing | UC-03 |
-| Shape placement and editing | Structured drawing | UC-03, UC-06, UC-12 |
-| Selection, move, and resize interactions | Editing transforms | UC-03, UC-04, UC-10, UC-12 |
-| Lasso and selection tools | PencilKit selection | UC-04 |
-| Stroke-level editing | PencilKit editing | UC-04 |
-| Copy and paste | Editing utilities | UC-04 |
-| Object transforms | Editing transforms | UC-04, UC-12 |
-| Freeform drawing | Canvas creation | UC-05, UC-12 |
-| Text boxes and text blocks | Paper-style composition | UC-05, UC-09, UC-12 |
-| Shapes and adornments | Paper-style composition | UC-05, UC-06, UC-12 |
-| Image insertion and embedded images | Media placement | UC-05, UC-09, UC-12 |
-| Canvas layout and multi-element editing | Paper-style composition | UC-05, UC-12 |
-| Image markup and image overlays | Markup workflows | UC-06, UC-10 |
-| Arrows and geometric shapes | Review markup | UC-06 |
-| Text annotations | Review/approval markup | UC-06, UC-11 |
-| Magnification with loupes | Precision review | UC-06, UC-13 |
-| Precise placement and adjustment | Precision review | UC-06, UC-13 |
-| Markup over documents and pages | Document annotation | UC-07 |
-| Handwritten comments and callouts | Document annotation | UC-07 |
-| Persistent save/reload of markup data | Persistence | UC-07, UC-14 |
-| Handwriting recognition | Recognition | UC-08 |
-| Scribble-related text input workflows | Recognition/input | UC-08 |
-| Text extraction from handwritten content | Recognition/search | UC-08 |
-| Hyperlinks | Paper-style composition | UC-09 |
-| Structured page composition | Paper-style composition | UC-09 |
-| Color-coded markup | Specialized annotation | UC-10 |
-| Shape markers | Specialized annotation | UC-10 |
-| Typed and handwritten notes | Mixed input | UC-10 |
-| High-fidelity ink capture | Signature workflow | UC-11 |
-| Signature persistence | Signature workflow | UC-11 |
-| Zoom and scroll | Navigation/review | UC-13 |
-| Hover previews on supported devices | Device-assisted review | UC-13 |
-| Paper markup persistence | Persistence | UC-14 |
-| Saved document version compatibility | Persistence | UC-14 |
-| Render to image | Export | UC-15 |
-| Export to shareable formats, including PDF | Export | UC-15 |
+Capability | Framework area | Use cases
+--- | --- | ---
+Apple Pencil and finger input | PencilKit input | UC-01
+`PKCanvasView` canvas rendering | PencilKit canvas | UC-01, UC-03, UC-04
+`PKToolPicker` tool selection | PencilKit tools | UC-01
+`PKDrawing` save/restore | PencilKit persistence | UC-01, UC-14
+Undo and redo | PencilKit editing | UC-01, UC-04
+Drawing over existing content | PencilKit/PaperKit overlay | UC-02, UC-07
+Pen, marker, pencil, and eraser tools | PencilKit tools | UC-02
+Highlighting and underlining | Document markup | UC-02, UC-07
+Export annotated output | Sharing/export | UC-02, UC-11, UC-15
+Ruler support | Precision drawing | UC-03
+Shape placement and editing | Structured drawing | UC-03, UC-06, UC-12
+Selection, move, and resize interactions | Editing transforms | UC-03, UC-04, UC-10, UC-12
+Lasso and selection tools | PencilKit selection | UC-04
+Stroke-level editing | PencilKit editing | UC-04
+Copy and paste | Editing utilities | UC-04
+Object transforms | Editing transforms | UC-04, UC-12
+Freeform drawing | Canvas creation | UC-05, UC-12
+Text boxes and text blocks | Paper-style composition | UC-05, UC-09, UC-12
+Shapes and adornments | Paper-style composition | UC-05, UC-06, UC-12
+Image insertion and embedded images | Media placement | UC-05, UC-09, UC-12
+Canvas layout and multi-element editing | Paper-style composition | UC-05, UC-12
+Image markup and image overlays | Markup workflows | UC-06, UC-10
+Arrows and geometric shapes | Review markup | UC-06
+Text annotations | Review/approval markup | UC-06, UC-11
+Magnification with loupes | Precision review | UC-06, UC-13
+Precise placement and adjustment | Precision review | UC-06, UC-13
+Markup over documents and pages | Document annotation | UC-07
+Handwritten comments and callouts | Document annotation | UC-07
+Persistent save/reload of markup data | Persistence | UC-07, UC-14
+Handwriting recognition | Recognition | UC-08
+Scribble-related text input workflows | Recognition/input | UC-08
+Text extraction from handwritten content | Recognition/search | UC-08
+Hyperlinks | Paper-style composition | UC-09
+Structured page composition | Paper-style composition | UC-09
+Color-coded markup | Specialized annotation | UC-10
+Shape markers | Specialized annotation | UC-10
+Typed and handwritten notes | Mixed input | UC-10
+High-fidelity ink capture | Signature workflow | UC-11
+Signature persistence | Signature workflow | UC-11
+Zoom and scroll | Navigation/review | UC-13
+Hover previews on supported devices | Device-assisted review | UC-13
+Paper markup persistence | Persistence | UC-14
+Saved document version compatibility | Persistence | UC-14
+Render to image | Export | UC-15
+Export to shareable formats, including PDF | Export | UC-15
 
 ## Suggested Product Concept
 
