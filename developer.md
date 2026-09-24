@@ -227,6 +227,7 @@ The matrix entries below map the documented capabilities and implementation touc
 - **High-fidelity ink capture** — Signature workflow — **Use cases:** UC-11
 - **Zoom and scroll** — Navigation/review — **Use cases:** UC-13
 - **Hover previews on supported devices** — Device-assisted review — **Use cases:** UC-13
+- **Device-assisted review aids** — Device-assisted review — **Use cases:** UC-13
 
 ### Product-Layer Editor Behaviors
 - **Highlighting and underlining** — Document markup — **Use cases:** UC-02, UC-07
@@ -255,11 +256,13 @@ The matrix entries below map the documented capabilities and implementation touc
 - **Color-coded markup** — Specialized annotation — **Use cases:** UC-10
 - **Shape markers** — Specialized annotation — **Use cases:** UC-10
 - **Typed and handwritten notes** — Mixed input — **Use cases:** UC-10
+- **Element repositioning and resizing** — Specialized annotation — **Use cases:** UC-10
 - **Signature persistence** — Signature workflow — **Use cases:** UC-11
 - **Paper markup persistence** — Persistence — **Use cases:** UC-14
 - **Saved document version compatibility** — Persistence — **Use cases:** UC-14
 - **Render to image** — Export — **Use cases:** UC-15
 - **Export to shareable formats, including PDF** — Export — **Use cases:** UC-15
+- **Save and distribute completed pages** — Export — **Use cases:** UC-15
 
 ## Suggested Product Concept
 
