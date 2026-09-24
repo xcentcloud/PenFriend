@@ -208,7 +208,7 @@ This document converts the existing feature ideas into formal use-case specifica
 
 ## Feature-to-Use-Case Matrix
 
-The matrix below maps every PencilKit/PaperKit-oriented capability referenced in this repository's product definition to the formal use cases above.
+The matrix below maps every major PencilKit/PaperKit-oriented capability explicitly listed in the **Capabilities** sections above to the formal use cases that depend on it.
 
 | Capability | Framework area | Use cases |
 | --- | --- | --- |
