@@ -167,7 +167,7 @@ This document converts the existing feature ideas into formal use-case specifica
   - If element overlap blocks editing, the system preserves z-order controls or selection fallback.
 - **Capabilities:** Freehand drawing, images, text boxes, shapes/adornments, multi-element page editing
 
-### UC-13: Detail Inspection and Accessible Review
+### UC-13: Detail Inspection and Device-Assisted Review
 - **Actor:** Reviewer needing fine-grained inspection or device-assisted readability
 - **Preconditions:** Dense content or detailed artwork is open
 - **Primary flow:**
