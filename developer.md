@@ -62,7 +62,7 @@ This document converts the existing feature ideas into formal use-case specifica
 - **Exceptions:**
   - If no strokes are selected, edit commands remain disabled.
   - If paste content is unavailable, duplicate and paste actions are skipped.
-- **Capabilities:** `PKCanvasView`, lasso/selection tools, stroke-level editing, copy/paste, transforms
+- **Capabilities:** `PKCanvasView`, lasso/selection tools, stroke-level editing, copy/paste, transforms, undo/redo
 
 ### UC-05: Mixed Media Brainstorming Canvas
 - **Actor:** Product, design, or workshop participant
@@ -88,7 +88,7 @@ This document converts the existing feature ideas into formal use-case specifica
 - **Exceptions:**
   - If high-resolution assets load slowly, the system may defer magnification until rendering completes.
   - If placement precision is limited, the system retains the last valid annotation position.
-- **Capabilities:** Image markup, arrows/geometric shapes, text annotations, loupes, precise placement/adjustment
+- **Capabilities:** Image markup, arrows/geometric shapes, text annotations, loupe support, precise placement/adjustment
 
 ### UC-07: PDF and Page Markup
 - **Actor:** Reader, analyst, or approver
