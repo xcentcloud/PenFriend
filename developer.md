@@ -31,7 +31,8 @@ This document converts the existing feature ideas into formal use-case specifica
   1. The actor opens an existing document.
   2. The system displays the document as an annotatable surface.
   3. The actor marks up the content with ink, highlights, or underlines.
-  4. The actor exports or saves the annotated result.
+  4. The system saves the annotation state in an editable form for later revision.
+  5. The actor optionally exports a flattened or shared result.
 - **Exceptions:**
   - If the source document cannot be rendered, the system blocks annotation and shows an import error.
   - If export fails, the system preserves the annotation session for retry.
@@ -174,8 +175,8 @@ This document converts the existing feature ideas into formal use-case specifica
   1. The actor zooms and scrolls to the target area.
   2. The actor uses zoom, loupe, or hover assistance to improve readability and control.
   3. The actor uses accessibility-oriented review aids such as VoiceOver-readable page context or larger inspection targets where supported.
-  4. The actor adds or adjusts precise annotations.
-  5. The system maintains annotation alignment at the current zoom level.
+  4. The actor adds or adjusts annotations using supported accessible targeting controls, such as focusable annotation handles or announced placement targets.
+  5. The system maintains annotation alignment at the current zoom level while preserving the accessible interaction path.
 - **Exceptions:**
   - If hover is unsupported on the device, the system continues without preview interactions.
   - If zoom limits are reached, the system keeps the current viewport and preserves edit accuracy.
@@ -211,7 +212,7 @@ This document converts the existing feature ideas into formal use-case specifica
 
 The matrix entries below map the documented capabilities and implementation touchpoints to the formal use cases that depend on them, separated into direct framework-level items and product-layer editor behaviors.
 
-### Framework-Level Capabilities
+### Platform and Framework Capabilities
 - **Apple Pencil and finger input** — PencilKit input — **Use cases:** UC-01
 - **`PKCanvasView` canvas rendering** — PencilKit canvas — **Use cases:** UC-01, UC-03, UC-04
 - **`PKToolPicker` and tool selection** — PencilKit tools — **Use cases:** UC-01, UC-02
