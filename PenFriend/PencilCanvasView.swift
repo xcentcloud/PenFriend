@@ -21,6 +21,8 @@ struct PencilCanvasView: UIViewRepresentable {
         canvasView.contentSize = CGSize(width: 2000, height: 3000)
         canvasView.becomeFirstResponder()
 
+        context.coordinator.lastCanvasDrawingData = drawing.dataRepresentation()
+        canvasView.drawing = drawing
         applySelectedTool(to: canvasView)
         return canvasView
     }
@@ -28,9 +30,13 @@ struct PencilCanvasView: UIViewRepresentable {
     func updateUIView(_ uiView: PKCanvasView, context: Context) {
         context.coordinator.parent = self
 
-        if uiView.drawing.dataRepresentation() != drawing.dataRepresentation() {
+        let updatedDrawingData = drawing.dataRepresentation()
+        if context.coordinator.suppressNextUIViewSync {
+            context.coordinator.suppressNextUIViewSync = false
+        } else if context.coordinator.lastCanvasDrawingData != updatedDrawingData {
             uiView.drawing = drawing
         }
+        context.coordinator.lastCanvasDrawingData = updatedDrawingData
 
         applySelectedTool(to: uiView)
         context.coordinator.installToolPickerIfNeeded(for: uiView)
@@ -56,12 +62,16 @@ struct PencilCanvasView: UIViewRepresentable {
         var parent: PencilCanvasView
         private let toolPicker = PKToolPicker()
         private weak var observedCanvasView: PKCanvasView?
+        var suppressNextUIViewSync = false
+        var lastCanvasDrawingData = Data()
 
         init(_ parent: PencilCanvasView) {
             self.parent = parent
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+            suppressNextUIViewSync = true
+            lastCanvasDrawingData = canvasView.drawing.dataRepresentation()
             parent.drawing = canvasView.drawing
             parent.onUndoStateChange(canvasView.undoManager)
         }

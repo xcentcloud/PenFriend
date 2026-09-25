@@ -74,12 +74,16 @@ struct ContentView: View {
                 .disabled(viewModel.selectedPageIndex >= viewModel.pages.count - 1)
             }
 
-            Picker("Editing Tool", selection: $viewModel.selectedTool) {
+            Menu {
                 ForEach(EditingTool.allCases) { tool in
-                    Text(tool.rawValue).tag(tool)
+                    Button(tool.rawValue) {
+                        viewModel.selectedTool = tool
+                    }
                 }
+            } label: {
+                Label("Tool: \(viewModel.selectedTool.rawValue)", systemImage: "pencil.tip.crop.circle")
             }
-            .pickerStyle(.segmented)
+            .accessibilityLabel("Editing Tool")
         }
     }
 }
