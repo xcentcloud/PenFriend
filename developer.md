@@ -1,12 +1,79 @@
-# iPad App Use Cases for PencilKit and PaperKit
+# PenFriend Product Brief and iPad Use Cases
 
-This document converts the existing feature ideas into formal use-case specifications and adds a capability matrix that maps the PencilKit/PaperKit foundation of the app together with the adjacent editor features built around it.
+This document defines PenFriend as an iOS 27-first Smart Notebook and Markup Workspace for iPad. It combines product positioning, requirements, formal use-case specifications, and a capability matrix that maps the PencilKit/PaperKit foundation of the app together with the adjacent editor features built around it.
 
 ## Scope
 
 - **Primary actor:** iPad user with touch or Apple Pencil input
 - **Supporting actors:** Shared recipients, imported document sources, local/cloud persistence
 - **Primary goal:** Create, annotate, refine, persist, and share handwritten and mixed-media content
+- **Platform direction:** iOS 27 and iPadOS 27 first, using the latest Apple Pencil, touch, accessibility, multitasking, and document-handling patterns
+
+## PenFriend Product Definition
+
+### Product Positioning
+
+PenFriend is a native iPad productivity app for handwriting, annotation, structured page composition, and shareable output. The product should feel like one unified workspace rather than separate note, PDF markup, and whiteboard tools.
+
+### Core Product Pillars
+
+- Handwritten note taking as the default entry experience
+- Document and image annotation for review, feedback, and field workflows
+- Structured markup with text, links, images, and shapes for rich page composition
+- Persistent editable canvases and page-based workspaces that reopen without flattening content
+- Sharing and export workflows for PDF, image, and collaboration handoff
+
+### Product Structure
+
+- **Notebook mode** for handwritten pages, planner pages, and journals
+- **Markup mode** for PDFs, screenshots, and imported images
+- **Canvas mode** for freeform boards, brainstorming, and mixed-media layouts
+- **Export and share layer** that works consistently across all three modes
+
+### iOS 27-First Product Direction
+
+- Align the experience with the latest iOS 27 and iPadOS 27 interaction patterns instead of building a custom interaction model that conflicts with the platform
+- Treat precision ink, editable markup, persistent state, device-assisted review, and modern sharing flows as product differentiators
+- Use current Apple Pencil, touch, accessibility, multitasking, and document workflows as first-class product behaviors
+
+### Primary Target Users
+
+- Students and note takers
+- Designers and reviewers
+- Inspectors and field operators
+- General productivity users who need both handwriting and structured content
+
+## Product Requirements
+
+### Notebook Module
+
+- Support handwritten note creation, planner pages, and journal-style page composition
+- Preserve editable ink state for reopened notes and notebooks
+- Cover core workflows represented by **UC-01**, **UC-08**, and **UC-09**
+
+### Markup Module
+
+- Support annotation on PDFs, worksheets, screenshots, and imported images
+- Preserve editable annotations for later revision instead of forcing flattened output
+- Cover core workflows represented by **UC-02**, **UC-06**, **UC-07**, **UC-10**, and **UC-11**
+
+### Canvas Module
+
+- Support freeform mixed-media canvases with handwriting, text, shapes, links, and images
+- Allow users to reposition, resize, and refine multiple elements on a shared surface
+- Cover core workflows represented by **UC-03**, **UC-04**, **UC-05**, and **UC-12**
+
+### Persistence Module
+
+- Restore notebooks, canvases, and markup sessions as editable workspaces
+- Maintain compatibility across saved versions and preserve recoverable state when partial restoration fails
+- Cover core workflows represented by **UC-07** and **UC-14**
+
+### Export Module
+
+- Export current pages or workspaces to shareable image and PDF outputs
+- Support system sharing and save flows without breaking the editable source state
+- Cover core workflows represented by **UC-02**, **UC-11**, and **UC-15**
 
 ## Formal Use-Case Specifications
 
@@ -211,7 +278,7 @@ This document converts the existing feature ideas into formal use-case specifica
 
 ## Capability-to-Use-Case Matrix
 
-The matrix entries below map the documented capabilities and implementation touchpoints to the formal use cases that depend on them, separated into direct framework-level items and product-layer editor behaviors.
+The matrix entries below map the documented capabilities and implementation touchpoints to the formal use cases that depend on them, separated into direct framework-level items and product-layer editor behaviors for the iOS 27-first PenFriend product.
 
 ### Platform and Framework Capabilities
 - **Apple Pencil and finger input** — PencilKit input — **Use cases:** UC-01
@@ -268,14 +335,37 @@ The matrix entries below map the documented capabilities and implementation touc
 - **Export to shareable formats, including PDF** — Export — **Use cases:** UC-15
 - **Save and distribute completed pages** — Export — **Use cases:** UC-15
 
-## Suggested Product Concept
+## PenFriend MVP Scope
 
-A strong product implementation remains a **Smart Notebook and Markup Workspace** for iPad that combines:
+### Priority 1: Core Capture and Editing
 
-- Handwritten note taking
-- Document and image annotation
-- Structured markup with text, links, images, and shapes
-- Persistent editable canvases and page-based workspaces
-- Sharing and export workflows
+- New handwritten note page creation
+- Apple Pencil and touch-based editing with undo and redo
+- Stroke selection, movement, and refinement
+- Primary supporting use cases: **UC-01**, **UC-04**
 
-This combination supports students, designers, reviewers, field workers, and general productivity users in one unified experience.
+### Priority 2: Markup Workflows
+
+- PDF and image annotation
+- Review markup with text, highlights, callouts, arrows, and shapes
+- Primary supporting use cases: **UC-02**, **UC-06**, **UC-07**
+
+### Priority 3: Structured Mixed Content Pages
+
+- Mixed content pages with text, shapes, links, and images
+- Notebook and canvas layouts that support richer composition beyond pure ink
+- Primary supporting use cases: **UC-05**, **UC-09**, **UC-12**
+
+### Priority 4: Persistent Editable Workspaces
+
+- Save and reopen notebooks, markup sessions, and canvases as editable state
+- Handle saved-version compatibility and partial recovery gracefully
+- Primary supporting use cases: **UC-14**
+
+### Priority 5: Sharing and Export
+
+- Export to PDF and image formats
+- Support system share flows and saved output handoff
+- Primary supporting use cases: **UC-15**
+
+This MVP keeps PenFriend focused on a unified iPad workspace for notes, markup, and mixed-media composition while remaining aligned with the latest iOS 27 product direction.
