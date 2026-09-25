@@ -339,10 +339,33 @@ The matrix entries below map the documented capabilities and implementation touc
 
 ### Priority 1: Core Capture and Editing
 
-- New handwritten note page creation
-- Apple Pencil and touch-based editing with undo and redo
-- Stroke selection, movement, and refinement
+- Status: **Implemented**
 - Primary supporting use cases: **UC-01**, **UC-04**
+
+#### Implemented Functional Scope
+
+- Users can create a new handwritten note page from the default notebook entry flow.
+- The note page supports Apple Pencil and finger input for writing and sketching.
+- Undo and redo are available during active note editing.
+- Stroke selection supports lasso-style or direct selection behavior for existing ink.
+- Selected strokes can be moved and refined without flattening the page state.
+- Edit history is preserved while selection and refinement actions are applied.
+
+#### Priority 1 UX Behavior
+
+- New page creation opens directly into an editable ink surface.
+- Tool selection keeps a usable default ink tool available at all times.
+- Undo and redo controls remain context-aware and available during capture/edit sessions.
+- Selection actions are disabled when no selectable strokes are present.
+- Refinement actions update the current page state immediately and remain reversible.
+
+#### Acceptance Criteria
+
+- A user can open a new note page and create handwritten content in one continuous flow.
+- A user can switch tools and continue writing without losing current drawing state.
+- A user can undo and redo edits across capture and refinement actions.
+- A user can select existing strokes, reposition them, and commit updates.
+- The resulting page remains editable after capture and refinement workflows.
 
 ### Priority 2: Markup Workflows
 
