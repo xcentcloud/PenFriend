@@ -22,8 +22,6 @@ struct PencilCanvasView: UIViewRepresentable {
         canvasView.becomeFirstResponder()
 
         applySelectedTool(to: canvasView)
-        context.coordinator.installToolPickerIfNeeded(for: canvasView)
-        onUndoStateChange(canvasView.undoManager)
         return canvasView
     }
 
@@ -57,6 +55,7 @@ struct PencilCanvasView: UIViewRepresentable {
     final class Coordinator: NSObject, PKCanvasViewDelegate {
         var parent: PencilCanvasView
         private let toolPicker = PKToolPicker()
+        private weak var observedCanvasView: PKCanvasView?
 
         init(_ parent: PencilCanvasView) {
             self.parent = parent
@@ -69,9 +68,24 @@ struct PencilCanvasView: UIViewRepresentable {
 
         func installToolPickerIfNeeded(for canvasView: PKCanvasView) {
             guard canvasView.window != nil else { return }
+
+            if observedCanvasView !== canvasView {
+                if let observedCanvasView {
+                    toolPicker.removeObserver(observedCanvasView)
+                }
+                toolPicker.addObserver(canvasView)
+                observedCanvasView = canvasView
+            }
+
             toolPicker.setVisible(true, forFirstResponder: canvasView)
-            toolPicker.addObserver(canvasView)
             canvasView.becomeFirstResponder()
+            parent.onUndoStateChange(canvasView.undoManager)
+        }
+
+        deinit {
+            if let observedCanvasView {
+                toolPicker.removeObserver(observedCanvasView)
+            }
         }
     }
 }

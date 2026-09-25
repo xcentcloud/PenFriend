@@ -26,6 +26,7 @@ final class NotesViewModel: ObservableObject {
     }
     @Published var currentDrawing = PKDrawing() {
         didSet {
+            guard !isLoadingPageDrawing else { return }
             guard pages.indices.contains(selectedPageIndex) else { return }
             pages[selectedPageIndex].drawing = currentDrawing
         }
@@ -35,6 +36,7 @@ final class NotesViewModel: ObservableObject {
     @Published private(set) var canRedo = false
 
     private weak var undoManager: UndoManager?
+    private var isLoadingPageDrawing = false
 
     init() {
         loadCurrentPageDrawing()
@@ -76,6 +78,8 @@ final class NotesViewModel: ObservableObject {
 
     private func loadCurrentPageDrawing() {
         guard pages.indices.contains(selectedPageIndex) else { return }
+        isLoadingPageDrawing = true
+        defer { isLoadingPageDrawing = false }
         currentDrawing = pages[selectedPageIndex].drawing
     }
 
