@@ -35,7 +35,7 @@ final class NotesViewModel: ObservableObject {
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
 
-    private weak var undoManager: UndoManager?
+    private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
 
     init() {
