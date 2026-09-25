@@ -4,7 +4,7 @@ PenFriend is an iPad-first SwiftUI + PencilKit workspace for handwritten capture
 
 ## Project
 
-- Xcode project: `/home/runner/work/PenFriend/PenFriend/PenFriend.xcodeproj`
+- Xcode project: `PenFriend.xcodeproj`
 - App target: `PenFriend`
 
 ## Priority 1 foundation included
@@ -16,6 +16,6 @@ PenFriend is an iPad-first SwiftUI + PencilKit workspace for handwritten capture
 
 ## Open in Xcode
 
-1. Open `/home/runner/work/PenFriend/PenFriend/PenFriend.xcodeproj`.
+1. Open `PenFriend.xcodeproj`.
 2. Select the `PenFriend` scheme.
 3. Run on an iPad simulator or device with Apple Pencil support.

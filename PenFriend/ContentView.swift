@@ -15,6 +15,7 @@ struct ContentView: View {
                         viewModel.bindUndoManager(undoManager)
                     }
                 )
+                .id(viewModel.selectedPageIndex)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
