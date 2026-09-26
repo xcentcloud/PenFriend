@@ -95,6 +95,7 @@ struct ContentView: View {
             Label(viewModel.storageStatus, systemImage: viewModel.storageStatusIconName)
                 .font(.footnote)
                 .foregroundStyle(.primary)
+                .accessibilityLiveRegion(.polite)
 
             Button {
                 viewModel.smoothCurrentDrawing()

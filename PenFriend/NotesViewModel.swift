@@ -209,6 +209,9 @@ final class NotesViewModel: ObservableObject {
                     isRestoringStoredPages = true
                     defer { isRestoringStoredPages = false }
                     pages = fallbackSnapshot.pages
+                    if pages.isEmpty {
+                        pages = [NotePage()]
+                    }
                     selectedPageIndex = min(selectedPageIndex, max(0, fallbackSnapshot.pages.count - 1))
                     loadCurrentPageDrawing()
                     storageLocation = .local
