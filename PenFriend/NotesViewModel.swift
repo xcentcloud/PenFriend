@@ -216,7 +216,7 @@ final class NotesViewModel: ObservableObject {
                 storageStatus = location.statusMessage
             } catch {
                 guard !Task.isCancelled else { return }
-                storageStatus = "Couldn't save notes to iCloud. Notes stay on this device."
+                storageStatus = "Couldn't save notes right now. Keep the app open and try again."
             }
         }
     }

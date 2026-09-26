@@ -24,8 +24,6 @@ struct NoteStorageSnapshot {
 
 private struct StoredNotebook: Codable {
     var pages: [StoredNotePage]
-
-    static let empty = StoredNotebook(pages: [StoredNotePage()])
 }
 
 private struct StoredNotePage: Codable {
