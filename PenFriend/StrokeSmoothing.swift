@@ -20,6 +20,7 @@ struct StrokeSmoothingResult {
 enum StrokeSmoothingModelStatus {
     case interpolationOnly
     case customModelApplied
+    case customModelRejectedByConfidence
     case customModelUnavailable
     case customModelPredictionFailed
 }
@@ -57,9 +58,10 @@ final class StrokeSmoothingService {
             }
 
             let smoothedDrawing = PKDrawing(strokes: customResult.strokes)
+            let allRejected = customResult.unchangedStrokeCount == originalStrokes.count
             return StrokeSmoothingResult(
                 drawing: smoothedDrawing,
-                modelStatus: .customModelApplied,
+                modelStatus: allRejected ? .customModelRejectedByConfidence : .customModelApplied,
                 unchangedStrokeCount: customResult.unchangedStrokeCount,
                 didChange: Self.didStrokePointsChange(original: originalStrokes, updated: customResult.strokes)
             )

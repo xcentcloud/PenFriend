@@ -94,20 +94,22 @@ final class NotesViewModel: ObservableObject {
             let result = await Task.detached(priority: .userInitiated) {
                 strokeSmoothingService.smooth(sourceDrawing, useCustomModel: useCustomModel)
             }.value
-            isSmoothing = false
+            await MainActor.run {
+                isSmoothing = false
 
-            guard drawingRevision == sourceRevision else {
-                smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
-                return
+                guard drawingRevision == sourceRevision else {
+                    smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
+                    return
+                }
+
+                guard result.didChange else {
+                    smoothingStatus = statusMessage(for: result, changed: false)
+                    return
+                }
+
+                transitionDrawing(from: currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
+                smoothingStatus = statusMessage(for: result, changed: true)
             }
-
-            guard result.didChange else {
-                smoothingStatus = statusMessage(for: result, changed: false)
-                return
-            }
-
-            transitionDrawing(from: currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
-            smoothingStatus = statusMessage(for: result, changed: true)
         }
     }
 
@@ -156,6 +158,8 @@ final class NotesViewModel: ObservableObject {
             return changed
                 ? "Custom model inference failed. Applied interpolation smoothing."
                 : "Custom model inference failed and interpolation made no visible changes."
+        case .customModelRejectedByConfidence:
+            return "Custom model confidence was low for all strokes. Kept original handwriting."
         case .interpolationOnly:
             return changed
                 ? "Applied interpolation smoothing."
