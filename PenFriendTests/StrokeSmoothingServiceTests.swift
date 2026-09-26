@@ -25,6 +25,11 @@ final class StrokeSmoothingServiceTests: XCTestCase {
 
         XCTAssertTrue(isStatus(result.modelStatus, .interpolationOnly))
         XCTAssertTrue(result.didChange)
+        XCTAssertEqual(result.drawing.strokes.count, 1)
+        let points = Array(result.drawing.strokes[0].path)
+        XCTAssertEqual(points.count, 3)
+        XCTAssertEqual(points[1].location.x, 10)
+        XCTAssertEqual(points[1].location.y, 3)
     }
 
     func testSmoothWithCustomModelUnavailableFallsBack() {
@@ -39,6 +44,11 @@ final class StrokeSmoothingServiceTests: XCTestCase {
 
         XCTAssertTrue(isStatus(result.modelStatus, .customModelUnavailable))
         XCTAssertTrue(result.didChange)
+        XCTAssertEqual(result.drawing.strokes.count, 1)
+        let points = Array(result.drawing.strokes[0].path)
+        XCTAssertEqual(points.count, 3)
+        XCTAssertEqual(points[1].location.x, 6)
+        XCTAssertEqual(points[1].location.y, 4)
     }
 
     func testSmoothWithRejectedConfidenceKeepsOriginal() {
