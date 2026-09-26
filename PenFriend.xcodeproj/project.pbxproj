@@ -41,7 +41,7 @@
 		A1B2C3D4E5F6000000000018 /* NoteStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStorage.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000019 /* PenFriend.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PenFriend.entitlements; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000020 /* PenFriendTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PenFriendTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A1B2C3D4E5F6000000000021 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/iPhoneOS.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		A1B2C3D4E5F6000000000021 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		A1B2C3D4E5F6000000000022 /* StrokeSmoothingServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeSmoothingServiceTests.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000023 /* NotesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
