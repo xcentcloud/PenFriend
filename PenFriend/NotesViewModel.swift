@@ -42,6 +42,7 @@ final class NotesViewModel: ObservableObject {
     private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
     private var drawingRevision: UInt64 = 0
+    private var smoothingRequestID: UInt64 = 0
     private var smoothingTask: Task<Void, Never>?
     private let strokeSmoothingService = StrokeSmoothingService()
 
@@ -87,6 +88,8 @@ final class NotesViewModel: ObservableObject {
         let sourceDrawing = currentDrawing
         let sourceRevision = drawingRevision
         let useCustomModel = useCustomSmoothingModel
+        smoothingRequestID &+= 1
+        let requestID = smoothingRequestID
         isSmoothing = true
 
         smoothingTask?.cancel()
@@ -99,11 +102,21 @@ final class NotesViewModel: ObservableObject {
             } onCancel: {
                 workerTask.cancel()
             }
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else {
+                await MainActor.run {
+                    guard requestID == smoothingRequestID else { return }
+                    isSmoothing = false
+                    smoothingTask = nil
+                }
+                return
+            }
 
             await MainActor.run {
-                defer { smoothingTask = nil }
-                isSmoothing = false
+                guard requestID == smoothingRequestID else { return }
+                defer {
+                    isSmoothing = false
+                    smoothingTask = nil
+                }
 
                 guard drawingRevision == sourceRevision else {
                     smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."

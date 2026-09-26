@@ -326,6 +326,9 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
     }
 
     private static func decodeIntVector(_ values: MLMultiArray, expectedCount: Int) throws -> [Int] {
-        try decodeDoubleVector(values, expectedCount: expectedCount).map { Int($0) }
+        try decodeDoubleVector(values, expectedCount: expectedCount).map { value in
+            guard value.rounded() == value else { throw StrokePredictionError.invalidOutput }
+            return Int(value)
+        }
     }
 }

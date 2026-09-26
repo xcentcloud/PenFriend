@@ -87,6 +87,7 @@ struct ContentView: View {
 
             Toggle("Use Custom Machine Learning Smoothing Model", isOn: $viewModel.useCustomSmoothingModel)
                 .accessibilityHint("Uses a bundled custom model when available and falls back to interpolation when unavailable.")
+                .disabled(viewModel.isSmoothing)
 
             Button {
                 viewModel.smoothCurrentDrawing()
