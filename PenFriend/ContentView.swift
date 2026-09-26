@@ -84,6 +84,21 @@ struct ContentView: View {
                 Label("Tool: \(viewModel.selectedTool.rawValue)", systemImage: "pencil.tip.crop.circle")
             }
             .accessibilityLabel("Editing Tool")
+
+            Toggle("Use Custom Model", isOn: $viewModel.useCustomSmoothingModel)
+
+            Button {
+                viewModel.smoothCurrentDrawing()
+            } label: {
+                Label("Smooth Handwriting", systemImage: "wand.and.stars")
+            }
+            .disabled(viewModel.currentDrawing.strokes.isEmpty)
+
+            if let smoothingStatus = viewModel.smoothingStatus {
+                Text(smoothingStatus)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

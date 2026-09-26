@@ -32,11 +32,14 @@ final class NotesViewModel: ObservableObject {
         }
     }
     @Published var selectedTool: EditingTool = .pen
+    @Published var useCustomSmoothingModel = false
+    @Published private(set) var smoothingStatus: String?
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
 
     private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
+    private let strokeSmoothingService = StrokeSmoothingService()
 
     init() {
         loadCurrentPageDrawing()
@@ -76,6 +79,36 @@ final class NotesViewModel: ObservableObject {
         refreshUndoState()
     }
 
+    func smoothCurrentDrawing() {
+        let previousDrawing = currentDrawing
+        let result = strokeSmoothingService.smooth(currentDrawing, useCustomModel: useCustomSmoothingModel)
+        guard result.drawing.dataRepresentation() != previousDrawing.dataRepresentation() else {
+            smoothingStatus = useCustomSmoothingModel
+                ? "No smoothing changes were applied."
+                : "Interpolation smoothing made no visible changes."
+            return
+        }
+
+        undoManager?.registerUndo(withTarget: self) { target in
+            target.restoreDrawing(previousDrawing)
+        }
+        undoManager?.setActionName("Smooth Handwriting")
+
+        currentDrawing = result.drawing
+        pages[selectedPageIndex].drawing = result.drawing
+        refreshUndoState()
+
+        if result.usedCustomModel {
+            smoothingStatus = result.unchangedStrokeCount > 0
+                ? "Smoothed with custom model (\(result.unchangedStrokeCount) low-confidence stroke(s) kept)."
+                : "Smoothed with custom model."
+        } else if useCustomSmoothingModel {
+            smoothingStatus = "Custom model unavailable. Applied interpolation smoothing."
+        } else {
+            smoothingStatus = "Applied interpolation smoothing."
+        }
+    }
+
     private func loadCurrentPageDrawing() {
         guard pages.indices.contains(selectedPageIndex) else { return }
         isLoadingPageDrawing = true
@@ -86,5 +119,12 @@ final class NotesViewModel: ObservableObject {
     func refreshUndoState() {
         canUndo = undoManager?.canUndo ?? false
         canRedo = undoManager?.canRedo ?? false
+    }
+
+    private func restoreDrawing(_ drawing: PKDrawing) {
+        currentDrawing = drawing
+        guard pages.indices.contains(selectedPageIndex) else { return }
+        pages[selectedPageIndex].drawing = drawing
+        refreshUndoState()
     }
 }

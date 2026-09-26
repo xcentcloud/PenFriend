@@ -13,6 +13,13 @@ PenFriend is an iPad-first SwiftUI + PencilKit workspace for handwritten capture
 - Apple Pencil and touch drawing canvas
 - Undo and redo editing actions
 - Stroke selection/editing entry via lasso tool
+- Handwriting smoothing with interpolation fallback and optional bundled Core ML model
+
+## Optional Core ML smoothing model
+
+- The app automatically looks for a compiled model named `HandwritingSmoother.mlmodelc` in the app bundle.
+- When present, enabling **Use Custom Model** applies model inference using PencilKit stroke data.
+- When unavailable, smoothing safely falls back to on-device interpolation.
 
 ## Open in Xcode
 
