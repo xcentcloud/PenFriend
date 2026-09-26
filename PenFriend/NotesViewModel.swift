@@ -68,10 +68,13 @@ final class NotesViewModel: ObservableObject {
         "Page \(selectedPageIndex + 1) of \(pages.count)"
     }
 
-    @MainActor
     func restoreIfNeeded() async {
-        guard !hasRestoredPages else { return }
-        hasRestoredPages = true
+        let shouldRestore = await MainActor.run { () -> Bool in
+            guard !hasRestoredPages else { return false }
+            hasRestoredPages = true
+            return true
+        }
+        guard shouldRestore else { return }
         await restorePages()
     }
 
@@ -172,15 +175,13 @@ final class NotesViewModel: ObservableObject {
         currentDrawing = pages[selectedPageIndex].drawing
     }
 
-    @MainActor
     private func restorePages() async {
-        var shouldCreateInitialFile = false
         do {
             let storage = noteStorage
             let snapshot = try await Task.detached {
                 try await storage.loadSnapshot()
             }.value
-            do {
+            await MainActor.run {
                 isRestoringStoredPages = true
                 defer { isRestoringStoredPages = false }
                 pages = snapshot.pages
@@ -195,10 +196,6 @@ final class NotesViewModel: ObservableObject {
                 if snapshot.didMigrateFromLocalStorage {
                     storageStatus = "Moved existing notes into iCloud."
                 }
-                shouldCreateInitialFile = snapshot.shouldCreateInitialFile
-            }
-            if shouldCreateInitialFile {
-                scheduleSavePages(immediate: true)
             }
         } catch {
             let storage = noteStorage
@@ -208,17 +205,28 @@ final class NotesViewModel: ObservableObject {
             if let fallbackSnapshot = try? await Task.detached {
                 try await storage.loadLocalSnapshot()
             }.value {
-                pages = fallbackSnapshot.pages
-                selectedPageIndex = min(selectedPageIndex, max(0, fallbackSnapshot.pages.count - 1))
-                loadCurrentPageDrawing()
-                storageLocation = .local
-                storageStatus = "Couldn't open iCloud notes. Restored local notes instead."
+                await MainActor.run {
+                    isRestoringStoredPages = true
+                    defer { isRestoringStoredPages = false }
+                    pages = fallbackSnapshot.pages
+                    selectedPageIndex = min(selectedPageIndex, max(0, fallbackSnapshot.pages.count - 1))
+                    loadCurrentPageDrawing()
+                    storageLocation = .local
+                    storageStatus = "Couldn't open iCloud notes. Restored local notes instead."
+                }
             } else {
-                pages = [NotePage()]
-                selectedPageIndex = 0
-                loadCurrentPageDrawing()
-                storageLocation = .local
-                storageStatus = "Couldn't open saved notes. Started a new local notebook."
+                await MainActor.run {
+                    isRestoringStoredPages = true
+                    defer { isRestoringStoredPages = false }
+                    pages = [NotePage()]
+                    selectedPageIndex = 0
+                    loadCurrentPageDrawing()
+                    storageLocation = .local
+                    storageStatus = "Couldn't open saved notes. Started a new local notebook."
+                }
+                await MainActor.run {
+                    scheduleSavePages(immediate: true)
+                }
             }
         }
     }
