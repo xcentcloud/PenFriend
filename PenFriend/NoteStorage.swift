@@ -94,6 +94,7 @@ actor NoteStorage: NoteStorageControlling {
         } catch {
             cachedICloudNotebookURL = nil
             if let localNotebook {
+                try? markPendingLocalFallback()
                 return NoteStorageSnapshot(
                     pages: try makePages(from: localNotebook),
                     location: .local,

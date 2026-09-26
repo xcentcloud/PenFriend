@@ -68,6 +68,7 @@ final class NotesViewModel: ObservableObject {
         "Page \(selectedPageIndex + 1) of \(pages.count)"
     }
 
+    @MainActor
     func restoreIfNeeded() async {
         guard !hasRestoredPages else { return }
         hasRestoredPages = true
@@ -302,12 +303,12 @@ final class NotesViewModel: ObservableObject {
     }
 
     deinit {
+        saveTask?.cancel()
         let latestPages = pages
         let storage = noteStorage
         Task.detached {
             try? await storage.savePages(latestPages)
         }
         smoothingTask?.cancel()
-        saveTask?.cancel()
     }
 }
