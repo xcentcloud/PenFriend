@@ -89,7 +89,7 @@ struct ContentView: View {
                 .accessibilityHint("Uses a bundled custom model when available and falls back to interpolation when unavailable.")
                 .disabled(viewModel.isSmoothing)
 
-            Label(viewModel.storageStatus, systemImage: "icloud")
+            Label(viewModel.storageStatus, systemImage: viewModel.storageStatusIconName)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .accessibilityLabel("Note storage status")

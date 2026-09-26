@@ -44,6 +44,7 @@ final class NotesViewModel: ObservableObject {
     @Published private(set) var isSmoothing = false
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
+    @Published private(set) var storageLocation: NoteStorageLocation = .local
     @Published private(set) var storageStatus = "Checking iCloud note storage…"
 
     private var undoManager: UndoManager?
@@ -66,6 +67,15 @@ final class NotesViewModel: ObservableObject {
 
     var pageLabel: String {
         "Page \(selectedPageIndex + 1) of \(pages.count)"
+    }
+
+    var storageStatusIconName: String {
+        switch storageLocation {
+        case .iCloud:
+            return "icloud"
+        case .local:
+            return "internaldrive"
+        }
     }
 
     func addNewPage() {
@@ -170,6 +180,7 @@ final class NotesViewModel: ObservableObject {
             }
             loadCurrentPageDrawing()
             storageStatus = snapshot.location.statusMessage
+            storageLocation = snapshot.location
             if snapshot.didMigrateFromLocalStorage {
                 storageStatus = "Moved existing notes into iCloud."
             }
@@ -180,6 +191,7 @@ final class NotesViewModel: ObservableObject {
             pages = [NotePage()]
             selectedPageIndex = 0
             loadCurrentPageDrawing()
+            storageLocation = .local
             storageStatus = "Couldn't open saved notes. Started a new local notebook."
         }
     }
@@ -223,10 +235,12 @@ final class NotesViewModel: ObservableObject {
                 let location = try await noteStorage.savePages(pagesToSave)
                 guard !Task.isCancelled else { return }
                 guard requestID == saveRequestID else { return }
+                storageLocation = location
                 storageStatus = location.statusMessage
             } catch {
                 guard !Task.isCancelled else { return }
                 guard requestID == saveRequestID else { return }
+                storageLocation = .local
                 storageStatus = "Couldn't save notes right now. Keep the app open and try again."
             }
         }

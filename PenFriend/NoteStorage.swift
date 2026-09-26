@@ -99,6 +99,7 @@ actor NoteStorage {
 
         if let iCloudURL, let localNotebook, hasPendingLocalFallback {
             try write(notebook: localNotebook, to: iCloudURL)
+            try write(notebook: localNotebook, to: localURL)
             try clearPendingLocalFallback()
             return NoteStorageSnapshot(
                 pages: try makePages(from: localNotebook),
@@ -111,6 +112,8 @@ actor NoteStorage {
         if let iCloudURL, let iCloudNotebook, let localNotebook {
             if localNotebook.updatedAt > iCloudNotebook.updatedAt {
                 try write(notebook: localNotebook, to: iCloudURL)
+                try write(notebook: localNotebook, to: localURL)
+                try clearPendingLocalFallback()
                 return NoteStorageSnapshot(
                     pages: try makePages(from: localNotebook),
                     location: .iCloud,
@@ -119,6 +122,8 @@ actor NoteStorage {
                 )
             }
 
+            try write(notebook: iCloudNotebook, to: localURL)
+            try clearPendingLocalFallback()
             return NoteStorageSnapshot(
                 pages: try makePages(from: iCloudNotebook),
                 location: .iCloud,
@@ -128,6 +133,8 @@ actor NoteStorage {
         }
 
         if let iCloudNotebook {
+            try write(notebook: iCloudNotebook, to: localURL)
+            try clearPendingLocalFallback()
             return NoteStorageSnapshot(
                 pages: try makePages(from: iCloudNotebook),
                 location: .iCloud,
@@ -139,6 +146,8 @@ actor NoteStorage {
         if let localNotebook {
             if let iCloudURL {
                 try write(notebook: localNotebook, to: iCloudURL)
+                try write(notebook: localNotebook, to: localURL)
+                try clearPendingLocalFallback()
                 return NoteStorageSnapshot(
                     pages: try makePages(from: localNotebook),
                     location: .iCloud,
