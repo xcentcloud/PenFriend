@@ -49,7 +49,7 @@ PenFriend is a native iPad productivity app for handwriting, annotation, structu
 
 - Support handwritten note creation, planner pages, and journal-style page composition
 - Preserve editable ink state for reopened notes and notebooks
-- Cover core workflows represented by **UC-01**, **UC-08**, and **UC-09**
+- Cover core workflows represented by **UC-01**, **UC-08**, **UC-09**, and **UC-16**
 
 ### Markup Module
 
@@ -276,6 +276,19 @@ PenFriend is a native iPad productivity app for handwriting, annotation, structu
   - If sharing is cancelled, the system preserves the generated export locally when possible.
 - **Capabilities:** Render to image, export to shareable formats, save/distribute completed pages
 
+### UC-16: AI-Assisted Handwriting Smoothing
+- **Actor:** Note taker, planner, or reviewer improving handwriting legibility
+- **Preconditions:** A page with handwritten strokes exists and smoothing is enabled for the current tool or selection
+- **Primary flow:**
+  1. The actor writes or selects handwritten strokes.
+  2. The actor applies AI-assisted smoothing to clean wobble and improve curve continuity.
+  3. The system previews the smoothed result before commit.
+  4. The actor accepts the result and the system stores the updated stroke set with undo support.
+- **Exceptions:**
+  - If smoothing confidence is low for a stroke, the system keeps the original stroke and flags it as unchanged.
+  - If device support for ML-based refinement is unavailable, the system falls back to PencilKit interpolation-only smoothing.
+- **Capabilities:** PencilKit stroke interpolation and rendering, optional Core ML custom model for learned smoothing refinement, preview/accept workflow, undo/redo-safe stroke replacement
+
 ## Capability-to-Use-Case Matrix
 
 The matrix entries below map the documented capabilities and implementation touchpoints to the formal use cases that depend on them, separated into direct framework-level items and product-layer editor behaviors for the iOS 27-first PenFriend product.
@@ -296,6 +309,8 @@ The matrix entries below map the documented capabilities and implementation touc
 - **High-fidelity ink capture** — Signature workflow — **Use cases:** UC-11
 - **Zoom and scroll** — Navigation/review — **Use cases:** UC-13
 - **Hover previews on supported devices** — Device-assisted review — **Use cases:** UC-13
+- **Stroke interpolation and resampling** — PencilKit stroke processing — **Use cases:** UC-16
+- **Custom on-device model inference (optional)** — Core ML pipeline — **Use cases:** UC-16
 
 ### Product-Layer Editor Behaviors
 - **Highlighting and underlining** — Document markup — **Use cases:** UC-02, UC-07
@@ -334,6 +349,12 @@ The matrix entries below map the documented capabilities and implementation touc
 - **Render to image** — Export — **Use cases:** UC-15
 - **Export to shareable formats, including PDF** — Export — **Use cases:** UC-15
 - **Save and distribute completed pages** — Export — **Use cases:** UC-15
+- **Smoothing preview and apply controls** — Ink refinement — **Use cases:** UC-16
+- **Confidence-aware fallback to original strokes** — Safe AI assist behavior — **Use cases:** UC-16
+
+### Apple Documentation Alignment for AI Smoothing
+- Apple documentation identifies PencilKit as the primary framework for low-latency ink capture and smoothing-style stroke rendering behavior.
+- Apple does not document a dedicated built-in handwriting-smoothing foundation model; for learned smoothing behavior, the supported model path is a custom on-device Core ML model integrated with PencilKit stroke data.
 
 ## PenFriend MVP Scope
 
