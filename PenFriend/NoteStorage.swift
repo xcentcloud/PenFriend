@@ -151,6 +151,7 @@ actor NoteStorage {
                 try write(notebook: notebook, to: iCloudURL)
                 return .iCloud
             } catch {
+                try? fileManager.removeItem(at: iCloudURL)
                 let localURL = try makeLocalNotebookURL()
                 try write(notebook: notebook, to: localURL)
                 return .local
