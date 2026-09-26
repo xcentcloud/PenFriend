@@ -72,6 +72,7 @@ actor NoteStorage {
             let pages = try loadPages(from: localURL)
             if let iCloudURL {
                 try write(pages: pages, to: iCloudURL)
+                try? fileManager.removeItem(at: localURL)
                 return NoteStorageSnapshot(
                     pages: pages,
                     location: .iCloud,

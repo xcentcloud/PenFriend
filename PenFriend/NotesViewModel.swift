@@ -58,7 +58,7 @@ final class NotesViewModel: ObservableObject {
 
     init() {
         loadCurrentPageDrawing()
-        Task {
+        Task { @MainActor in
             await restorePages()
         }
     }
@@ -155,6 +155,7 @@ final class NotesViewModel: ObservableObject {
         currentDrawing = pages[selectedPageIndex].drawing
     }
 
+    @MainActor
     private func restorePages() async {
         do {
             let snapshot = try await noteStorage.loadSnapshot()
@@ -204,7 +205,7 @@ final class NotesViewModel: ObservableObject {
         let pagesToSave = pages
 
         saveTask?.cancel()
-        saveTask = Task {
+        saveTask = Task { @MainActor in
             if !immediate {
                 try? await Task.sleep(for: .milliseconds(500))
             }
