@@ -14,6 +14,7 @@ PenFriend is an iPad-first SwiftUI + PencilKit workspace for handwritten capture
 - Undo and redo editing actions
 - Stroke selection/editing entry via lasso tool
 - Handwriting smoothing with interpolation fallback and optional bundled Core ML model
+- iCloud-backed note persistence with automatic on-device fallback when iCloud is unavailable
 
 ## Optional Core ML smoothing model
 
@@ -26,3 +27,9 @@ PenFriend is an iPad-first SwiftUI + PencilKit workspace for handwritten capture
 1. Open `PenFriend.xcodeproj`.
 2. Select the `PenFriend` scheme.
 3. Run on an iPad simulator or device with Apple Pencil support.
+
+## iCloud note storage
+
+- Notes are saved into the app's iCloud Documents container whenever iCloud Drive is available for the signed-in Apple ID.
+- Existing on-device notes are migrated into iCloud the first time the container becomes available.
+- If iCloud is unavailable, notes continue saving locally in Application Support until iCloud can be used again.

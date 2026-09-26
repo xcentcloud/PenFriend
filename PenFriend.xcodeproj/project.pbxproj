@@ -13,6 +13,7 @@
 		A1B2C3D4E5F6000000000004 /* NotesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000014 /* NotesViewModel.swift */; };
 		A1B2C3D4E5F6000000000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000015 /* Assets.xcassets */; };
 		A1B2C3D4E5F6000000000006 /* StrokeSmoothing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000017 /* StrokeSmoothing.swift */; };
+		A1B2C3D4E5F6000000000007 /* NoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6000000000018 /* NoteStorage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,8 @@
 		A1B2C3D4E5F6000000000015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000017 /* StrokeSmoothing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeSmoothing.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000018 /* NoteStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStorage.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6000000000019 /* PenFriend.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PenFriend.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,8 +56,10 @@
 				A1B2C3D4E5F6000000000013 /* PencilCanvasView.swift */,
 				A1B2C3D4E5F6000000000014 /* NotesViewModel.swift */,
 				A1B2C3D4E5F6000000000017 /* StrokeSmoothing.swift */,
+				A1B2C3D4E5F6000000000018 /* NoteStorage.swift */,
 				A1B2C3D4E5F6000000000015 /* Assets.xcassets */,
 				A1B2C3D4E5F6000000000016 /* Info.plist */,
+				A1B2C3D4E5F6000000000019 /* PenFriend.entitlements */,
 			);
 			path = PenFriend;
 			sourceTree = "<group>";
@@ -141,6 +146,7 @@
 				A1B2C3D4E5F6000000000003 /* PencilCanvasView.swift in Sources */,
 				A1B2C3D4E5F6000000000004 /* NotesViewModel.swift in Sources */,
 				A1B2C3D4E5F6000000000006 /* StrokeSmoothing.swift in Sources */,
+				A1B2C3D4E5F6000000000007 /* NoteStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,6 +209,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = PenFriend/PenFriend.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PenFriend/Info.plist;
@@ -227,6 +234,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = PenFriend/PenFriend.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PenFriend/Info.plist;

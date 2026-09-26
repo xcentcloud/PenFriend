@@ -24,6 +24,9 @@ struct ContentView: View {
             }
             .padding()
             .navigationTitle("PenFriend")
+            .task {
+                await viewModel.restoreIfNeeded()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("New Page", systemImage: "plus.square.on.square") {
@@ -88,6 +91,11 @@ struct ContentView: View {
             Toggle("Use Custom Machine Learning Smoothing Model", isOn: $viewModel.useCustomSmoothingModel)
                 .accessibilityHint("Uses a bundled custom model when available and falls back to interpolation when unavailable.")
                 .disabled(viewModel.isSmoothing)
+
+            Label(viewModel.storageStatus, systemImage: viewModel.storageStatusIconName)
+                .font(.footnote)
+                .foregroundStyle(.primary)
+                .accessibilityLiveRegion(.polite)
 
             Button {
                 viewModel.smoothCurrentDrawing()
