@@ -26,6 +26,7 @@ final class NotesViewModel: ObservableObject {
     }
     @Published var currentDrawing = PKDrawing() {
         didSet {
+            drawingRevision &+= 1
             guard !isLoadingPageDrawing else { return }
             guard pages.indices.contains(selectedPageIndex) else { return }
             pages[selectedPageIndex].drawing = currentDrawing
@@ -40,6 +41,7 @@ final class NotesViewModel: ObservableObject {
 
     private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
+    private var drawingRevision: UInt64 = 0
     private let strokeSmoothingService = StrokeSmoothingService()
 
     init() {
@@ -84,6 +86,7 @@ final class NotesViewModel: ObservableObject {
         guard !isSmoothing else { return }
 
         let sourceDrawing = currentDrawing
+        let sourceRevision = drawingRevision
         let useCustomModel = useCustomSmoothingModel
         isSmoothing = true
 
@@ -92,7 +95,7 @@ final class NotesViewModel: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.isSmoothing = false
-                guard self.currentDrawing.dataRepresentation() == sourceDrawing.dataRepresentation() else {
+                guard self.drawingRevision == sourceRevision else {
                     self.smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
                     return
                 }
