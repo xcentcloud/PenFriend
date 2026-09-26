@@ -24,22 +24,23 @@ struct NoteStorageSnapshot: Sendable {
 
 protocol NoteStorageControlling: Sendable {
     func loadSnapshot() async throws -> NoteStorageSnapshot
+    func loadLocalSnapshot() async throws -> NoteStorageSnapshot
     func savePages(_ pages: [NotePage]) async throws -> NoteStorageLocation
     func ensureLocalFallbackNotebookExists() async throws
 }
 
 private struct StoredNotebook: Codable {
-    var updatedAt: Date
+    var revision: UInt64
     var pages: [StoredNotePage]
 
-    init(updatedAt: Date = Date(), pages: [StoredNotePage]) {
-        self.updatedAt = updatedAt
+    init(revision: UInt64 = 0, pages: [StoredNotePage]) {
+        self.revision = revision
         self.pages = pages
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? .distantPast
+        revision = try container.decodeIfPresent(UInt64.self, forKey: .revision) ?? 0
         pages = try container.decode([StoredNotePage].self, forKey: .pages)
     }
 }
@@ -116,7 +117,7 @@ actor NoteStorage: NoteStorageControlling {
         }
 
         if let iCloudURL, let iCloudNotebook, let localNotebook {
-            if localNotebook.updatedAt > iCloudNotebook.updatedAt {
+            if localNotebook.revision > iCloudNotebook.revision {
                 try write(notebook: localNotebook, to: iCloudURL)
                 try write(notebook: localNotebook, to: localURL)
                 try clearPendingLocalFallback()
@@ -170,24 +171,62 @@ actor NoteStorage: NoteStorageControlling {
             )
         }
 
+        let emptyNotebook = StoredNotebook(revision: 1, pages: [StoredNotePage()])
+        if let iCloudURL {
+            do {
+                try write(notebook: emptyNotebook, to: iCloudURL)
+                try write(notebook: emptyNotebook, to: localURL)
+                try clearPendingLocalFallback()
+                return NoteStorageSnapshot(
+                    pages: try makePages(from: emptyNotebook),
+                    location: .iCloud,
+                    didMigrateFromLocalStorage: false,
+                    shouldCreateInitialFile: false
+                )
+            } catch {
+                cachedICloudNotebookURL = nil
+            }
+        }
+
+        try write(notebook: emptyNotebook, to: localURL)
         return NoteStorageSnapshot(
-            pages: [NotePage()],
-            location: iCloudURL == nil ? .local : .iCloud,
+            pages: try makePages(from: emptyNotebook),
+            location: .local,
             didMigrateFromLocalStorage: false,
-            shouldCreateInitialFile: true
+            shouldCreateInitialFile: false
+        )
+    }
+
+    func loadLocalSnapshot() async throws -> NoteStorageSnapshot {
+        let localURL = try makeLocalNotebookURL()
+        let notebook: StoredNotebook
+        if fileManager.fileExists(atPath: localURL.path) {
+            notebook = try loadNotebook(from: localURL)
+        } else {
+            notebook = StoredNotebook(revision: 1, pages: [StoredNotePage()])
+            try write(notebook: notebook, to: localURL)
+        }
+
+        return NoteStorageSnapshot(
+            pages: try makePages(from: notebook),
+            location: .local,
+            didMigrateFromLocalStorage: false,
+            shouldCreateInitialFile: false
         )
     }
 
     func savePages(_ pages: [NotePage]) async throws -> NoteStorageLocation {
         let pagesToPersist = pages.isEmpty ? [NotePage()] : pages
+        let localURL = try makeLocalNotebookURL()
+        let iCloudURL = try makeICloudNotebookURL()
         let notebook = StoredNotebook(
+            revision: try nextRevision(localURL: localURL, iCloudURL: iCloudURL),
             pages: pagesToPersist.map { page in
                 StoredNotePage(id: page.id, drawingData: page.drawing.dataRepresentation())
             }
         )
-        let localURL = try makeLocalNotebookURL()
 
-        if let iCloudURL = try makeICloudNotebookURL() {
+        if let iCloudURL {
             do {
                 try write(notebook: notebook, to: iCloudURL)
                 try write(notebook: notebook, to: localURL)
@@ -228,6 +267,19 @@ actor NoteStorage: NoteStorageControlling {
     private func write(notebook: StoredNotebook, to fileURL: URL) throws {
         let data = try JSONEncoder().encode(notebook)
         try data.write(to: fileURL, options: [.atomic])
+    }
+
+    private func nextRevision(localURL: URL, iCloudURL: URL?) throws -> UInt64 {
+        let localRevision = try existingRevision(at: localURL)
+        let iCloudRevision = try existingRevision(at: iCloudURL)
+        return max(localRevision, iCloudRevision) + 1
+    }
+
+    private func existingRevision(at fileURL: URL?) throws -> UInt64 {
+        guard let fileURL, fileManager.fileExists(atPath: fileURL.path) else {
+            return 0
+        }
+        return (try? loadNotebook(from: fileURL).revision) ?? 0
     }
 
     private func makeICloudNotebookURL() throws -> URL? {

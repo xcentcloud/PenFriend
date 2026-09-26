@@ -204,12 +204,21 @@ final class NotesViewModel: ObservableObject {
             try? await Task.detached {
                 try await storage.ensureLocalFallbackNotebookExists()
             }.value
-            isRestoringStoredPages = false
-            pages = [NotePage()]
-            selectedPageIndex = 0
-            loadCurrentPageDrawing()
-            storageLocation = .local
-            storageStatus = "Couldn't open saved notes. Started a new local notebook."
+            if let fallbackSnapshot = try? await Task.detached {
+                try await storage.loadLocalSnapshot()
+            }.value {
+                pages = fallbackSnapshot.pages
+                selectedPageIndex = 0
+                loadCurrentPageDrawing()
+                storageLocation = .local
+                storageStatus = "Couldn't open iCloud notes. Restored local notes instead."
+            } else {
+                pages = [NotePage()]
+                selectedPageIndex = 0
+                loadCurrentPageDrawing()
+                storageLocation = .local
+                storageStatus = "Couldn't open saved notes. Started a new local notebook."
+            }
         }
     }
 
