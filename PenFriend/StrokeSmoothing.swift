@@ -8,9 +8,20 @@ private func rebuildStroke(from stroke: PKStroke, with path: PKStrokePath) -> PK
 
 struct StrokeSmoothingResult {
     let drawing: PKDrawing
-    let usedCustomModel: Bool
+    let modelStatus: StrokeSmoothingModelStatus
     let unchangedStrokeCount: Int
     let didChange: Bool
+
+    var usedCustomModel: Bool {
+        modelStatus == .customModelApplied
+    }
+}
+
+enum StrokeSmoothingModelStatus {
+    case interpolationOnly
+    case customModelApplied
+    case customModelUnavailable
+    case customModelPredictionFailed
 }
 
 final class StrokeSmoothingService {
@@ -28,30 +39,47 @@ final class StrokeSmoothingService {
     func smooth(_ drawing: PKDrawing, useCustomModel: Bool) -> StrokeSmoothingResult {
         let originalStrokes = drawing.strokes
         guard !originalStrokes.isEmpty else {
-            return StrokeSmoothingResult(drawing: drawing, usedCustomModel: false, unchangedStrokeCount: 0, didChange: false)
-        }
-
-        if useCustomModel,
-           let predictor,
-           let customResult = try? predictor.predict(from: originalStrokes, confidenceThreshold: confidenceThreshold) {
-            let smoothedDrawing = PKDrawing(strokes: customResult.strokes)
-            let didChange = smoothedDrawing.dataRepresentation() != drawing.dataRepresentation()
             return StrokeSmoothingResult(
-                drawing: smoothedDrawing,
-                usedCustomModel: true,
-                unchangedStrokeCount: customResult.unchangedStrokeCount,
-                didChange: didChange
+                drawing: drawing,
+                modelStatus: .interpolationOnly,
+                unchangedStrokeCount: 0,
+                didChange: false
             )
         }
 
-        let smoothed = originalStrokes.map(Self.interpolateStroke)
+        if useCustomModel {
+            guard let predictor else {
+                return fallbackResult(from: drawing, strokes: originalStrokes, status: .customModelUnavailable)
+            }
+
+            guard let customResult = try? predictor.predict(from: originalStrokes, confidenceThreshold: confidenceThreshold) else {
+                return fallbackResult(from: drawing, strokes: originalStrokes, status: .customModelPredictionFailed)
+            }
+
+            let smoothedDrawing = PKDrawing(strokes: customResult.strokes)
+            return StrokeSmoothingResult(
+                drawing: smoothedDrawing,
+                modelStatus: .customModelApplied,
+                unchangedStrokeCount: customResult.unchangedStrokeCount,
+                didChange: smoothedDrawing.dataRepresentation() != drawing.dataRepresentation()
+            )
+        }
+
+        return fallbackResult(from: drawing, strokes: originalStrokes, status: .interpolationOnly)
+    }
+
+    private static func fallbackResult(
+        from originalDrawing: PKDrawing,
+        strokes: [PKStroke],
+        status: StrokeSmoothingModelStatus
+    ) -> StrokeSmoothingResult {
+        let smoothed = strokes.map(Self.interpolateStroke)
         let smoothedDrawing = PKDrawing(strokes: smoothed)
-        let didChange = smoothedDrawing.dataRepresentation() != drawing.dataRepresentation()
         return StrokeSmoothingResult(
             drawing: smoothedDrawing,
-            usedCustomModel: false,
+            modelStatus: status,
             unchangedStrokeCount: 0,
-            didChange: didChange
+            didChange: smoothedDrawing.dataRepresentation() != originalDrawing.dataRepresentation()
         )
     }
 
@@ -126,7 +154,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
     }
 
     private static func makeInput(strokes: [PKStroke]) throws -> MLFeatureProvider {
-        let pointCounts = strokes.map { Array($0.path).count }
+        let pointCounts = strokes.map { $0.path.count }
         let totalPointCount = pointCounts.reduce(0, +)
         guard totalPointCount > 0 else { throw StrokePredictionError.invalidInput }
 
@@ -167,10 +195,13 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         }
 
         let confidence = output.featureValue(for: "stroke_confidence")?.multiArrayValue
-        let pointCounts = template.map { Array($0.path).count }
+        let pointCounts = template.map { $0.path.count }
         let expectedValueCount = pointCounts.reduce(0, +) * 9
         guard points.count == expectedValueCount else { throw StrokePredictionError.invalidOutput }
         if let confidence, confidence.count != template.count {
+            throw StrokePredictionError.invalidOutput
+        }
+        if !hasValidOutputShape(points, expectedValueCount: expectedValueCount, expectedPointCount: pointCounts.reduce(0, +)) {
             throw StrokePredictionError.invalidOutput
         }
 
@@ -222,5 +253,24 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         }
 
         return StrokePredictionResult(strokes: rebuiltStrokes, unchangedStrokeCount: unchangedStrokeCount)
+    }
+
+    private static func hasValidOutputShape(
+        _ points: MLMultiArray,
+        expectedValueCount: Int,
+        expectedPointCount: Int
+    ) -> Bool {
+        let shape = points.shape.map(\.intValue)
+        let strides = points.strides.map(\.intValue)
+
+        if shape == [expectedValueCount] {
+            return true
+        }
+
+        if shape == [expectedPointCount, 9], strides == [9, 1] {
+            return true
+        }
+
+        return false
     }
 }

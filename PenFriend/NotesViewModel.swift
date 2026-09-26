@@ -82,23 +82,12 @@ final class NotesViewModel: ObservableObject {
     func smoothCurrentDrawing() {
         let result = strokeSmoothingService.smooth(currentDrawing, useCustomModel: useCustomSmoothingModel)
         guard result.didChange else {
-            smoothingStatus = useCustomSmoothingModel
-                ? "No smoothing changes were applied."
-                : "Interpolation smoothing made no visible changes."
+            smoothingStatus = statusMessage(for: result, changed: false)
             return
         }
 
         transitionDrawing(from: currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
-
-        if result.usedCustomModel {
-            smoothingStatus = result.unchangedStrokeCount > 0
-                ? "Smoothed with custom model (\(result.unchangedStrokeCount) low-confidence stroke(s) kept)."
-                : "Smoothed with custom model."
-        } else if useCustomSmoothingModel {
-            smoothingStatus = "Custom model unavailable. Applied interpolation smoothing."
-        } else {
-            smoothingStatus = "Applied interpolation smoothing."
-        }
+        smoothingStatus = statusMessage(for: result, changed: true)
     }
 
     private func loadCurrentPageDrawing() {
@@ -127,5 +116,29 @@ final class NotesViewModel: ObservableObject {
             pages[selectedPageIndex].drawing = drawing
         }
         refreshUndoState()
+    }
+
+    private func statusMessage(for result: StrokeSmoothingResult, changed: Bool) -> String {
+        switch result.modelStatus {
+        case .customModelApplied:
+            if changed {
+                return result.unchangedStrokeCount > 0
+                    ? "Smoothed with custom model (\(result.unchangedStrokeCount) low-confidence stroke(s) kept)."
+                    : "Smoothed with custom model."
+            }
+            return "Custom model produced no visible smoothing changes."
+        case .customModelUnavailable:
+            return changed
+                ? "Custom model unavailable. Applied interpolation smoothing."
+                : "Custom model unavailable and interpolation made no visible changes."
+        case .customModelPredictionFailed:
+            return changed
+                ? "Custom model inference failed. Applied interpolation smoothing."
+                : "Custom model inference failed and interpolation made no visible changes."
+        case .interpolationOnly:
+            return changed
+                ? "Applied interpolation smoothing."
+                : "Interpolation smoothing made no visible changes."
+        }
     }
 }
