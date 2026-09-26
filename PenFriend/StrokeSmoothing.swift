@@ -2,6 +2,8 @@ import Foundation
 import PencilKit
 import CoreML
 
+private let strokeFeatureWidth = 9
+
 private func rebuildStroke(from stroke: PKStroke, with path: PKStrokePath) -> PKStroke {
     PKStroke(ink: stroke.ink, path: path, transform: stroke.transform, mask: stroke.mask)
 }
@@ -182,7 +184,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         let totalPointCount = pointCounts.reduce(0, +)
         guard totalPointCount > 0 else { throw StrokePredictionError.invalidInput }
 
-        let flattened = try MLMultiArray(shape: [NSNumber(value: totalPointCount * 9)], dataType: .double)
+        let flattened = try MLMultiArray(shape: [NSNumber(value: totalPointCount * strokeFeatureWidth)], dataType: .double)
         let counts = try MLMultiArray(shape: [NSNumber(value: pointCounts.count)], dataType: .int32)
 
         var arrayIndex = 0
@@ -199,7 +201,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
                 flattened[arrayIndex + 6] = NSNumber(value: point.force)
                 flattened[arrayIndex + 7] = NSNumber(value: point.azimuth)
                 flattened[arrayIndex + 8] = NSNumber(value: point.altitude)
-                arrayIndex += 9
+                arrayIndex += strokeFeatureWidth
             }
         }
 
@@ -223,13 +225,16 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
 
         let confidence = output.featureValue(for: "stroke_confidence")?.multiArrayValue
         let pointCounts = template.map { $0.path.count }
-        let expectedValueCount = pointCounts.reduce(0, +) * 9
+        let expectedValueCount = pointCounts.reduce(0, +) * strokeFeatureWidth
         guard points.count == expectedValueCount else { throw StrokePredictionError.invalidOutput }
         guard outputPointCounts.count == pointCounts.count else { throw StrokePredictionError.invalidOutput }
         for (index, inputCount) in pointCounts.enumerated() {
             guard outputPointCounts[index].intValue == inputCount else { throw StrokePredictionError.invalidOutput }
         }
         if let confidence, confidence.count != template.count {
+            throw StrokePredictionError.invalidOutput
+        }
+        if let confidence, !hasValidConfidenceShape(confidence, expectedStrokeCount: template.count) {
             throw StrokePredictionError.invalidOutput
         }
         if !hasValidOutputShape(points, expectedValueCount: expectedValueCount, expectedPointCount: pointCounts.reduce(0, +)) {
@@ -252,7 +257,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
             if isLowConfidence {
                 rebuiltStrokes.append(stroke)
                 unchangedStrokeCount += 1
-                pointOffset += pointCounts[strokeIndex] * 9
+                pointOffset += pointCounts[strokeIndex] * strokeFeatureWidth
                 continue
             }
 
@@ -276,7 +281,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
                     altitude: points[pointOffset + 8].doubleValue
                 )
                 smoothedPoints.append(point)
-                pointOffset += 9
+                pointOffset += strokeFeatureWidth
             }
 
             let path = PKStrokePath(controlPoints: smoothedPoints, creationDate: stroke.path.creationDate)
@@ -297,10 +302,21 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
             return true
         }
 
-        if shape == [expectedPointCount, 9] {
+        if shape == [expectedPointCount, strokeFeatureWidth] {
             return true
         }
 
+        return false
+    }
+
+    private static func hasValidConfidenceShape(_ confidence: MLMultiArray, expectedStrokeCount: Int) -> Bool {
+        let shape = confidence.shape.map(\.intValue)
+        if shape == [expectedStrokeCount] {
+            return true
+        }
+        if shape == [1, expectedStrokeCount] || shape == [expectedStrokeCount, 1] {
+            return true
+        }
         return false
     }
 }
