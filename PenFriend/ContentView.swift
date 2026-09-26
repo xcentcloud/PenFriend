@@ -92,7 +92,7 @@ struct ContentView: View {
             } label: {
                 Label("Smooth Handwriting", systemImage: "wand.and.stars")
             }
-            .disabled(viewModel.currentDrawing.strokes.isEmpty)
+            .disabled(viewModel.currentDrawing.strokes.isEmpty || viewModel.isSmoothing)
 
             if let smoothingStatus = viewModel.smoothingStatus {
                 Text(smoothingStatus)

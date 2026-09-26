@@ -34,6 +34,7 @@ final class NotesViewModel: ObservableObject {
     @Published var selectedTool: EditingTool = .pen
     @Published var useCustomSmoothingModel = false
     @Published private(set) var smoothingStatus: String?
+    @Published private(set) var isSmoothing = false
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
 
@@ -80,14 +81,27 @@ final class NotesViewModel: ObservableObject {
     }
 
     func smoothCurrentDrawing() {
-        let result = strokeSmoothingService.smooth(currentDrawing, useCustomModel: useCustomSmoothingModel)
-        guard result.didChange else {
-            smoothingStatus = statusMessage(for: result, changed: false)
-            return
-        }
+        guard !isSmoothing else { return }
 
-        transitionDrawing(from: currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
-        smoothingStatus = statusMessage(for: result, changed: true)
+        let sourceDrawing = currentDrawing
+        let useCustomModel = useCustomSmoothingModel
+        isSmoothing = true
+
+        DispatchQueue.global(qos: .userInitiated).async { [strokeSmoothingService] in
+            let result = strokeSmoothingService.smooth(sourceDrawing, useCustomModel: useCustomModel)
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.isSmoothing = false
+
+                guard result.didChange else {
+                    self.smoothingStatus = self.statusMessage(for: result, changed: false)
+                    return
+                }
+
+                self.transitionDrawing(from: self.currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
+                self.smoothingStatus = self.statusMessage(for: result, changed: true)
+            }
+        }
     }
 
     private func loadCurrentPageDrawing() {

@@ -49,11 +49,11 @@ final class StrokeSmoothingService {
 
         if useCustomModel {
             guard let predictor else {
-                return fallbackResult(from: drawing, strokes: originalStrokes, status: .customModelUnavailable)
+                return fallbackResult(strokes: originalStrokes, status: .customModelUnavailable)
             }
 
             guard let customResult = try? predictor.predict(from: originalStrokes, confidenceThreshold: confidenceThreshold) else {
-                return fallbackResult(from: drawing, strokes: originalStrokes, status: .customModelPredictionFailed)
+                return fallbackResult(strokes: originalStrokes, status: .customModelPredictionFailed)
             }
 
             let smoothedDrawing = PKDrawing(strokes: customResult.strokes)
@@ -61,15 +61,14 @@ final class StrokeSmoothingService {
                 drawing: smoothedDrawing,
                 modelStatus: .customModelApplied,
                 unchangedStrokeCount: customResult.unchangedStrokeCount,
-                didChange: smoothedDrawing.dataRepresentation() != drawing.dataRepresentation()
+                didChange: Self.didStrokePointsChange(original: originalStrokes, updated: customResult.strokes)
             )
         }
 
-        return fallbackResult(from: drawing, strokes: originalStrokes, status: .interpolationOnly)
+        return fallbackResult(strokes: originalStrokes, status: .interpolationOnly)
     }
 
     private static func fallbackResult(
-        from originalDrawing: PKDrawing,
         strokes: [PKStroke],
         status: StrokeSmoothingModelStatus
     ) -> StrokeSmoothingResult {
@@ -79,7 +78,7 @@ final class StrokeSmoothingService {
             drawing: smoothedDrawing,
             modelStatus: status,
             unchangedStrokeCount: 0,
-            didChange: smoothedDrawing.dataRepresentation() != originalDrawing.dataRepresentation()
+            didChange: didStrokePointsChange(original: strokes, updated: smoothed)
         )
     }
 
@@ -116,6 +115,29 @@ final class StrokeSmoothingService {
         return rebuildStroke(from: stroke, with: smoothedPath)
     }
 
+    private static func didStrokePointsChange(original: [PKStroke], updated: [PKStroke]) -> Bool {
+        guard original.count == updated.count else { return true }
+
+        for (originalStroke, updatedStroke) in zip(original, updated) {
+            let originalPoints = originalStroke.path
+            let updatedPoints = updatedStroke.path
+            guard originalPoints.count == updatedPoints.count else { return true }
+
+            for (originalPoint, updatedPoint) in zip(originalPoints, updatedPoints) {
+                if originalPoint.location != updatedPoint.location ||
+                    originalPoint.timeOffset != updatedPoint.timeOffset ||
+                    originalPoint.size != updatedPoint.size ||
+                    originalPoint.opacity != updatedPoint.opacity ||
+                    originalPoint.force != updatedPoint.force ||
+                    originalPoint.azimuth != updatedPoint.azimuth ||
+                    originalPoint.altitude != updatedPoint.altitude {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
 }
 
 protocol StrokeSmoothingPredicting {
@@ -193,11 +215,18 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         guard let points = output.featureValue(for: "smoothed_stroke_points")?.multiArrayValue else {
             throw StrokePredictionError.invalidOutput
         }
+        guard let outputPointCounts = output.featureValue(for: "smoothed_stroke_point_counts")?.multiArrayValue else {
+            throw StrokePredictionError.invalidOutput
+        }
 
         let confidence = output.featureValue(for: "stroke_confidence")?.multiArrayValue
         let pointCounts = template.map { $0.path.count }
         let expectedValueCount = pointCounts.reduce(0, +) * 9
         guard points.count == expectedValueCount else { throw StrokePredictionError.invalidOutput }
+        guard outputPointCounts.count == pointCounts.count else { throw StrokePredictionError.invalidOutput }
+        for (index, inputCount) in pointCounts.enumerated() {
+            guard outputPointCounts[index].intValue == inputCount else { throw StrokePredictionError.invalidOutput }
+        }
         if let confidence, confidence.count != template.count {
             throw StrokePredictionError.invalidOutput
         }
