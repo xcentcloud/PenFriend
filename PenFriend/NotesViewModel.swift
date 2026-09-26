@@ -55,18 +55,22 @@ final class NotesViewModel: ObservableObject {
     private var saveRequestID: UInt64 = 0
     private var smoothingTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
+    private var hasRestoredPages = false
     private let strokeSmoothingService = StrokeSmoothingService()
     private let noteStorage = NoteStorage()
 
     init() {
         loadCurrentPageDrawing()
-        Task { @MainActor in
-            await restorePages()
-        }
     }
 
     var pageLabel: String {
         "Page \(selectedPageIndex + 1) of \(pages.count)"
+    }
+
+    func restoreIfNeeded() async {
+        guard !hasRestoredPages else { return }
+        hasRestoredPages = true
+        await restorePages()
     }
 
     var storageStatusIconName: String {
@@ -168,25 +172,31 @@ final class NotesViewModel: ObservableObject {
 
     @MainActor
     private func restorePages() async {
+        var shouldCreateInitialFile = false
         do {
             let snapshot = try await noteStorage.loadSnapshot()
-            isRestoringStoredPages = true
-            defer { isRestoringStoredPages = false }
-            pages = snapshot.pages
-            selectedPageIndex = min(selectedPageIndex, max(0, pages.count - 1))
-            if pages.isEmpty {
-                pages = [NotePage()]
-                selectedPageIndex = 0
+            do {
+                isRestoringStoredPages = true
+                defer { isRestoringStoredPages = false }
+                pages = snapshot.pages
+                selectedPageIndex = min(selectedPageIndex, max(0, pages.count - 1))
+                if pages.isEmpty {
+                    pages = [NotePage()]
+                    selectedPageIndex = 0
+                }
+                loadCurrentPageDrawing()
+                storageStatus = snapshot.location.statusMessage
+                storageLocation = snapshot.location
+                if snapshot.didMigrateFromLocalStorage {
+                    storageStatus = "Moved existing notes into iCloud."
+                }
+                shouldCreateInitialFile = snapshot.shouldCreateInitialFile
             }
-            loadCurrentPageDrawing()
-            storageStatus = snapshot.location.statusMessage
-            storageLocation = snapshot.location
-            if snapshot.didMigrateFromLocalStorage {
-                storageStatus = "Moved existing notes into iCloud."
+            if shouldCreateInitialFile {
+                scheduleSavePages(immediate: true)
             }
-            scheduleSavePages(immediate: snapshot.shouldCreateInitialFile)
         } catch {
-            try? await noteStorage.prepareLocalFallbackNotebook()
+            try? await noteStorage.ensureLocalFallbackNotebookExists()
             isRestoringStoredPages = false
             pages = [NotePage()]
             selectedPageIndex = 0

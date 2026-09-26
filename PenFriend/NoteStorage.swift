@@ -196,20 +196,15 @@ actor NoteStorage {
         }
 
         try write(notebook: notebook, to: localURL)
-        try markPendingLocalFallback()
         return .local
     }
 
-    func prepareLocalFallbackNotebook() throws {
+    func ensureLocalFallbackNotebookExists() throws {
         let localURL = try makeLocalNotebookURL()
-        if fileManager.fileExists(atPath: localURL.path) {
-            let backupURL = localURL
-                .deletingLastPathComponent()
-                .appendingPathComponent("Notebook-recovery-\(ISO8601DateFormatter().string(from: Date())).json")
-            try? fileManager.moveItem(at: localURL, to: backupURL)
+        guard !fileManager.fileExists(atPath: localURL.path) else {
+            return
         }
         try write(notebook: StoredNotebook(pages: [StoredNotePage()]), to: localURL)
-        try markPendingLocalFallback()
     }
 
     private func loadNotebook(from fileURL: URL) throws -> StoredNotebook {

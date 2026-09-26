@@ -24,6 +24,9 @@ struct ContentView: View {
             }
             .padding()
             .navigationTitle("PenFriend")
+            .task {
+                await viewModel.restoreIfNeeded()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("New Page", systemImage: "plus.square.on.square") {
