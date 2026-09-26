@@ -106,6 +106,17 @@ actor NoteStorage: NoteStorageControlling {
         }
 
         if let iCloudURL, let localNotebook, hasPendingLocalFallback {
+            if let iCloudNotebook, iCloudNotebook.revision >= localNotebook.revision {
+                try write(notebook: iCloudNotebook, to: localURL)
+                try clearPendingLocalFallback()
+                return NoteStorageSnapshot(
+                    pages: try makePages(from: iCloudNotebook),
+                    location: .iCloud,
+                    didMigrateFromLocalStorage: false,
+                    shouldCreateInitialFile: false
+                )
+            }
+
             try write(notebook: localNotebook, to: iCloudURL)
             try write(notebook: localNotebook, to: localURL)
             try clearPendingLocalFallback()
@@ -331,7 +342,7 @@ actor NoteStorage: NoteStorageControlling {
 
     private func markPendingLocalFallback() throws {
         let markerURL = try markerURL()
-        try Data().write(to: markerURL, options: [.atomic])
+        try Data([0x01]).write(to: markerURL, options: [.atomic])
     }
 
     private func clearPendingLocalFallback() throws {
