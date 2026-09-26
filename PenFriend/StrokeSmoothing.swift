@@ -166,7 +166,12 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         var pointOffset = 0
 
         for (strokeIndex, stroke) in template.enumerated() {
-            let isLowConfidence = (confidence?[strokeIndex].doubleValue ?? 1) < confidenceThreshold
+            let isLowConfidence: Bool
+            if let confidence {
+                isLowConfidence = strokeIndex >= confidence.count || confidence[strokeIndex].doubleValue < confidenceThreshold
+            } else {
+                isLowConfidence = false
+            }
             if isLowConfidence {
                 rebuiltStrokes.append(stroke)
                 unchangedStrokeCount += 1

@@ -89,14 +89,7 @@ final class NotesViewModel: ObservableObject {
             return
         }
 
-        undoManager?.registerUndo(withTarget: self) { target in
-            target.restoreDrawing(previousDrawing)
-        }
-        undoManager?.setActionName("Smooth Handwriting")
-
-        currentDrawing = result.drawing
-        pages[selectedPageIndex].drawing = result.drawing
-        refreshUndoState()
+        applyDrawing(result.drawing, registerUndo: true, undoActionName: "Smooth Handwriting")
 
         if result.usedCustomModel {
             smoothingStatus = result.unchangedStrokeCount > 0
@@ -121,7 +114,15 @@ final class NotesViewModel: ObservableObject {
         canRedo = undoManager?.canRedo ?? false
     }
 
-    private func restoreDrawing(_ drawing: PKDrawing) {
+    private func applyDrawing(_ drawing: PKDrawing, registerUndo: Bool, undoActionName: String) {
+        let priorDrawing = currentDrawing
+        if registerUndo {
+            undoManager?.registerUndo(withTarget: self) { target in
+                target.applyDrawing(priorDrawing, registerUndo: true, undoActionName: undoActionName)
+            }
+            undoManager?.setActionName(undoActionName)
+        }
+
         currentDrawing = drawing
         guard pages.indices.contains(selectedPageIndex) else { return }
         pages[selectedPageIndex].drawing = drawing

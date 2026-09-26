@@ -98,6 +98,7 @@ struct ContentView: View {
                 Text(smoothingStatus)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .accessibilityLiveRegion(.polite)
             }
         }
     }
