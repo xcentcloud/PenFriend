@@ -84,6 +84,25 @@ struct ContentView: View {
                 Label("Tool: \(viewModel.selectedTool.rawValue)", systemImage: "pencil.tip.crop.circle")
             }
             .accessibilityLabel("Editing Tool")
+
+            Toggle("Use Custom Machine Learning Smoothing Model", isOn: $viewModel.useCustomSmoothingModel)
+                .accessibilityHint("Uses a bundled custom model when available and falls back to interpolation when unavailable.")
+                .disabled(viewModel.isSmoothing)
+
+            Button {
+                viewModel.smoothCurrentDrawing()
+            } label: {
+                Label("Smooth Handwriting", systemImage: "wand.and.stars")
+            }
+            .disabled(viewModel.currentDrawing.strokes.isEmpty || viewModel.isSmoothing)
+
+            Text(viewModel.smoothingStatus ?? " ")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .opacity(viewModel.smoothingStatus == nil ? 0 : 1)
+                .accessibilityLabel("Smoothing status")
+                .accessibilityValue(viewModel.smoothingStatus ?? "No smoothing status")
+                .accessibilityLiveRegion(.polite)
         }
     }
 }

@@ -26,17 +26,25 @@ final class NotesViewModel: ObservableObject {
     }
     @Published var currentDrawing = PKDrawing() {
         didSet {
+            drawingRevision &+= 1
             guard !isLoadingPageDrawing else { return }
             guard pages.indices.contains(selectedPageIndex) else { return }
             pages[selectedPageIndex].drawing = currentDrawing
         }
     }
     @Published var selectedTool: EditingTool = .pen
+    @Published var useCustomSmoothingModel = false
+    @Published private(set) var smoothingStatus: String?
+    @Published private(set) var isSmoothing = false
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
 
     private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
+    private var drawingRevision: UInt64 = 0
+    private var smoothingRequestID: UInt64 = 0
+    private var smoothingTask: Task<Void, Never>?
+    private let strokeSmoothingService = StrokeSmoothingService()
 
     init() {
         loadCurrentPageDrawing()
@@ -76,6 +84,56 @@ final class NotesViewModel: ObservableObject {
         refreshUndoState()
     }
 
+    func smoothCurrentDrawing() {
+        let sourceDrawing = currentDrawing
+        let sourceRevision = drawingRevision
+        let useCustomModel = useCustomSmoothingModel
+        smoothingRequestID &+= 1
+        let requestID = smoothingRequestID
+        isSmoothing = true
+
+        smoothingTask?.cancel()
+        smoothingTask = Task { [strokeSmoothingService] in
+            let workerTask = Task.detached(priority: .userInitiated) {
+                strokeSmoothingService.smooth(sourceDrawing, useCustomModel: useCustomModel)
+            }
+            let result = await withTaskCancellationHandler {
+                await workerTask.value
+            } onCancel: {
+                workerTask.cancel()
+            }
+            guard !Task.isCancelled else {
+                await MainActor.run {
+                    guard requestID == smoothingRequestID else { return }
+                    isSmoothing = false
+                    smoothingTask = nil
+                }
+                return
+            }
+
+            await MainActor.run {
+                guard requestID == smoothingRequestID else { return }
+                defer {
+                    isSmoothing = false
+                    smoothingTask = nil
+                }
+
+                guard drawingRevision == sourceRevision else {
+                    smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
+                    return
+                }
+
+                guard result.didChange else {
+                    smoothingStatus = statusMessage(for: result, changed: false)
+                    return
+                }
+
+                transitionDrawing(from: currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
+                smoothingStatus = statusMessage(for: result, changed: true)
+            }
+        }
+    }
+
     private func loadCurrentPageDrawing() {
         guard pages.indices.contains(selectedPageIndex) else { return }
         isLoadingPageDrawing = true
@@ -86,5 +144,51 @@ final class NotesViewModel: ObservableObject {
     func refreshUndoState() {
         canUndo = undoManager?.canUndo ?? false
         canRedo = undoManager?.canRedo ?? false
+    }
+
+    private func transitionDrawing(from previousDrawing: PKDrawing, to nextDrawing: PKDrawing, actionName: String) {
+        undoManager?.registerUndo(withTarget: self) { target in
+            target.transitionDrawing(from: nextDrawing, to: previousDrawing, actionName: actionName)
+        }
+        undoManager?.setActionName(actionName)
+        applyDrawing(nextDrawing)
+    }
+
+    private func applyDrawing(_ drawing: PKDrawing) {
+        currentDrawing = drawing
+        if pages.indices.contains(selectedPageIndex) {
+            pages[selectedPageIndex].drawing = drawing
+        }
+        refreshUndoState()
+    }
+
+    private func statusMessage(for result: StrokeSmoothingResult, changed: Bool) -> String {
+        switch result.modelStatus {
+        case .customModelApplied:
+            if changed {
+                return result.unchangedStrokeCount > 0
+                    ? "Smoothed with custom model (\(result.unchangedStrokeCount) low-confidence stroke(s) kept)."
+                    : "Smoothed with custom model."
+            }
+            return "Custom model produced no visible smoothing changes."
+        case .customModelUnavailable:
+            return changed
+                ? "Custom model unavailable. Applied interpolation smoothing."
+                : "Custom model unavailable and interpolation made no visible changes."
+        case .customModelPredictionFailed:
+            return changed
+                ? "Custom model inference failed. Applied interpolation smoothing."
+                : "Custom model inference failed and interpolation made no visible changes."
+        case .customModelRejectedByConfidence:
+            return "Custom model confidence was low for all strokes. Kept original handwriting."
+        case .interpolationOnly:
+            return changed
+                ? "Applied interpolation smoothing."
+                : "Interpolation smoothing made no visible changes."
+        }
+    }
+
+    deinit {
+        smoothingTask?.cancel()
     }
 }
