@@ -85,7 +85,8 @@ struct ContentView: View {
             }
             .accessibilityLabel("Editing Tool")
 
-            Toggle("Use Custom Model", isOn: $viewModel.useCustomSmoothingModel)
+            Toggle("Use Custom ML Smoothing Model", isOn: $viewModel.useCustomSmoothingModel)
+                .accessibilityLabel("Use custom machine learning model for handwriting smoothing")
 
             Button {
                 viewModel.smoothCurrentDrawing()

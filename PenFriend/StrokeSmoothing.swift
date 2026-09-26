@@ -10,6 +10,7 @@ struct StrokeSmoothingResult {
     let drawing: PKDrawing
     let usedCustomModel: Bool
     let unchangedStrokeCount: Int
+    let didChange: Bool
 }
 
 final class StrokeSmoothingService {
@@ -27,24 +28,28 @@ final class StrokeSmoothingService {
     func smooth(_ drawing: PKDrawing, useCustomModel: Bool) -> StrokeSmoothingResult {
         let originalStrokes = drawing.strokes
         guard !originalStrokes.isEmpty else {
-            return StrokeSmoothingResult(drawing: drawing, usedCustomModel: false, unchangedStrokeCount: 0)
+            return StrokeSmoothingResult(drawing: drawing, usedCustomModel: false, unchangedStrokeCount: 0, didChange: false)
         }
 
         if useCustomModel,
            let predictor,
            let customResult = try? predictor.predict(from: originalStrokes, confidenceThreshold: confidenceThreshold) {
+            let didChange = !Self.strokesEqual(originalStrokes, customResult.strokes)
             return StrokeSmoothingResult(
                 drawing: PKDrawing(strokes: customResult.strokes),
                 usedCustomModel: true,
-                unchangedStrokeCount: customResult.unchangedStrokeCount
+                unchangedStrokeCount: customResult.unchangedStrokeCount,
+                didChange: didChange
             )
         }
 
         let smoothed = originalStrokes.map(Self.interpolateStroke)
+        let didChange = !Self.strokesEqual(originalStrokes, smoothed)
         return StrokeSmoothingResult(
             drawing: PKDrawing(strokes: smoothed),
             usedCustomModel: false,
-            unchangedStrokeCount: 0
+            unchangedStrokeCount: 0,
+            didChange: didChange
         )
     }
 
@@ -79,6 +84,30 @@ final class StrokeSmoothingService {
 
         let smoothedPath = PKStrokePath(controlPoints: smoothedPoints, creationDate: stroke.path.creationDate)
         return rebuildStroke(from: stroke, with: smoothedPath)
+    }
+
+    private static func strokesEqual(_ lhs: [PKStroke], _ rhs: [PKStroke]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+
+        for (leftStroke, rightStroke) in zip(lhs, rhs) {
+            let leftPoints = Array(leftStroke.path)
+            let rightPoints = Array(rightStroke.path)
+            guard leftPoints.count == rightPoints.count else { return false }
+
+            for (leftPoint, rightPoint) in zip(leftPoints, rightPoints) {
+                guard leftPoint.location == rightPoint.location,
+                      leftPoint.timeOffset == rightPoint.timeOffset,
+                      leftPoint.size == rightPoint.size,
+                      leftPoint.opacity == rightPoint.opacity,
+                      leftPoint.force == rightPoint.force,
+                      leftPoint.azimuth == rightPoint.azimuth,
+                      leftPoint.altitude == rightPoint.altitude else {
+                    return false
+                }
+            }
+        }
+
+        return true
     }
 }
 

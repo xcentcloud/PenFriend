@@ -80,16 +80,15 @@ final class NotesViewModel: ObservableObject {
     }
 
     func smoothCurrentDrawing() {
-        let previousDrawing = currentDrawing
         let result = strokeSmoothingService.smooth(currentDrawing, useCustomModel: useCustomSmoothingModel)
-        guard result.drawing.dataRepresentation() != previousDrawing.dataRepresentation() else {
+        guard result.didChange else {
             smoothingStatus = useCustomSmoothingModel
                 ? "No smoothing changes were applied."
                 : "Interpolation smoothing made no visible changes."
             return
         }
 
-        applyDrawing(result.drawing, registerUndo: true, undoActionName: "Smooth Handwriting")
+        applyDrawingWithUndo(result.drawing, undoActionName: "Smooth Handwriting")
 
         if result.usedCustomModel {
             smoothingStatus = result.unchangedStrokeCount > 0
@@ -114,15 +113,24 @@ final class NotesViewModel: ObservableObject {
         canRedo = undoManager?.canRedo ?? false
     }
 
-    private func applyDrawing(_ drawing: PKDrawing, registerUndo: Bool, undoActionName: String) {
-        let priorDrawing = currentDrawing
-        if registerUndo {
-            undoManager?.registerUndo(withTarget: self) { target in
-                target.applyDrawing(priorDrawing, registerUndo: true, undoActionName: undoActionName)
-            }
-            undoManager?.setActionName(undoActionName)
+    private func applyDrawingWithUndo(_ drawing: PKDrawing, undoActionName: String) {
+        let previousDrawing = currentDrawing
+        undoManager?.registerUndo(withTarget: self) { target in
+            target.applyDrawingForUndo(previousDrawing, redoDrawing: drawing, undoActionName: undoActionName)
         }
+        undoManager?.setActionName(undoActionName)
+        applyDrawing(drawing)
+    }
 
+    private func applyDrawingForUndo(_ drawing: PKDrawing, redoDrawing: PKDrawing, undoActionName: String) {
+        undoManager?.registerUndo(withTarget: self) { target in
+            target.applyDrawingForUndo(redoDrawing, redoDrawing: drawing, undoActionName: undoActionName)
+        }
+        undoManager?.setActionName(undoActionName)
+        applyDrawing(drawing)
+    }
+
+    private func applyDrawing(_ drawing: PKDrawing) {
         currentDrawing = drawing
         if pages.indices.contains(selectedPageIndex) {
             pages[selectedPageIndex].drawing = drawing
