@@ -50,9 +50,14 @@ enum NoteStorageError: LocalizedError {
 actor NoteStorage {
     private let fileManager: FileManager
     private let notebookFileName = "Notebook.json"
+    private let ubiquityContainerIdentifier: String?
 
-    init(fileManager: FileManager = .default) {
+    init(
+        fileManager: FileManager = .default,
+        ubiquityContainerIdentifier: String? = Bundle.main.bundleIdentifier.map { "iCloud.\($0)" }
+    ) {
         self.fileManager = fileManager
+        self.ubiquityContainerIdentifier = ubiquityContainerIdentifier
     }
 
     func loadSnapshot() throws -> NoteStorageSnapshot {
@@ -118,8 +123,8 @@ actor NoteStorage {
     private func loadPages(from fileURL: URL) throws -> [NotePage] {
         let data = try Data(contentsOf: fileURL)
         let notebook = try JSONDecoder().decode(StoredNotebook.self, from: data)
-        let pages = notebook.pages.map { page in
-            NotePage(id: page.id, drawing: (try? PKDrawing(data: page.drawingData)) ?? PKDrawing())
+        let pages = try notebook.pages.map { page in
+            try NotePage(id: page.id, drawing: PKDrawing(data: page.drawingData))
         }
         return pages.isEmpty ? [NotePage()] : pages
     }
@@ -135,7 +140,7 @@ actor NoteStorage {
     }
 
     private func makeICloudNotebookURL() throws -> URL? {
-        guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: nil) else {
+        guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: ubiquityContainerIdentifier) else {
             return nil
         }
 

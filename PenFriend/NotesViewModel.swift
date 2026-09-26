@@ -177,6 +177,7 @@ final class NotesViewModel: ObservableObject {
         } catch {
             isRestoringStoredPages = false
             storageStatus = "Couldn't open saved notes. Keeping notes on this device for now."
+            scheduleSavePages(immediate: true)
         }
     }
 
