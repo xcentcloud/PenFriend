@@ -23,10 +23,10 @@ struct NoteStorageSnapshot: Sendable {
 }
 
 protocol NoteStorageControlling: Sendable {
-    func loadSnapshot() async throws -> NoteStorageSnapshot
-    func loadLocalSnapshot() async throws -> NoteStorageSnapshot
-    func savePages(_ pages: [NotePage]) async throws -> NoteStorageLocation
-    func ensureLocalFallbackNotebookExists() async throws
+    func loadSnapshot() throws -> NoteStorageSnapshot
+    func loadLocalSnapshot() throws -> NoteStorageSnapshot
+    func savePages(_ pages: [NotePage]) throws -> NoteStorageLocation
+    func ensureLocalFallbackNotebookExists() throws
 }
 
 private struct StoredNotebook: Codable {
@@ -81,7 +81,7 @@ actor NoteStorage: NoteStorageControlling {
         self.ubiquityContainerIdentifier = ubiquityContainerIdentifier
     }
 
-    func loadSnapshot() async throws -> NoteStorageSnapshot {
+    func loadSnapshot() throws -> NoteStorageSnapshot {
         let iCloudURL = try makeICloudNotebookURL()
         let localURL = try makeLocalNotebookURL()
         let localNotebook = try fileManager.fileExists(atPath: localURL.path) ? loadNotebook(from: localURL) : nil
@@ -153,15 +153,19 @@ actor NoteStorage: NoteStorageControlling {
 
         if let localNotebook {
             if let iCloudURL {
-                try write(notebook: localNotebook, to: iCloudURL)
-                try write(notebook: localNotebook, to: localURL)
-                try clearPendingLocalFallback()
-                return NoteStorageSnapshot(
-                    pages: try makePages(from: localNotebook),
-                    location: .iCloud,
-                    didMigrateFromLocalStorage: true,
-                    shouldCreateInitialFile: false
-                )
+                do {
+                    try write(notebook: localNotebook, to: iCloudURL)
+                    try write(notebook: localNotebook, to: localURL)
+                    try clearPendingLocalFallback()
+                    return NoteStorageSnapshot(
+                        pages: try makePages(from: localNotebook),
+                        location: .iCloud,
+                        didMigrateFromLocalStorage: true,
+                        shouldCreateInitialFile: false
+                    )
+                } catch {
+                    cachedICloudNotebookURL = nil
+                }
             }
 
             return NoteStorageSnapshot(
@@ -198,7 +202,7 @@ actor NoteStorage: NoteStorageControlling {
         )
     }
 
-    func loadLocalSnapshot() async throws -> NoteStorageSnapshot {
+    func loadLocalSnapshot() throws -> NoteStorageSnapshot {
         let localURL = try makeLocalNotebookURL()
         let notebook: StoredNotebook
         if fileManager.fileExists(atPath: localURL.path) {
@@ -216,7 +220,7 @@ actor NoteStorage: NoteStorageControlling {
         )
     }
 
-    func savePages(_ pages: [NotePage]) async throws -> NoteStorageLocation {
+    func savePages(_ pages: [NotePage]) throws -> NoteStorageLocation {
         let pagesToPersist = pages.isEmpty ? [NotePage()] : pages
         let localURL = try makeLocalNotebookURL()
         let iCloudURL = try makeICloudNotebookURL()
@@ -246,7 +250,7 @@ actor NoteStorage: NoteStorageControlling {
         return .local
     }
 
-    func ensureLocalFallbackNotebookExists() async throws {
+    func ensureLocalFallbackNotebookExists() throws {
         let localURL = try makeLocalNotebookURL()
         guard !fileManager.fileExists(atPath: localURL.path) else {
             return

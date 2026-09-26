@@ -303,12 +303,6 @@ final class NotesViewModel: ObservableObject {
     }
 
     deinit {
-        saveTask?.cancel()
-        let latestPages = pages
-        let storage = noteStorage
-        Task.detached {
-            try? await storage.savePages(latestPages)
-        }
         smoothingTask?.cancel()
     }
 }
