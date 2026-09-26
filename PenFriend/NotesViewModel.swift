@@ -42,7 +42,6 @@ final class NotesViewModel: ObservableObject {
     private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
     private var drawingRevision: UInt64 = 0
-    private var smoothingTask: Task<Void, Never>?
     private let strokeSmoothingService = StrokeSmoothingService()
 
     init() {
@@ -91,15 +90,11 @@ final class NotesViewModel: ObservableObject {
         let useCustomModel = useCustomSmoothingModel
         isSmoothing = true
 
-        smoothingTask?.cancel()
-        smoothingTask = Task { [strokeSmoothingService] in
+        Task { [strokeSmoothingService] in
             let result = await Task.detached(priority: .userInitiated) {
                 strokeSmoothingService.smooth(sourceDrawing, useCustomModel: useCustomModel)
             }.value
-            guard !Task.isCancelled else { return }
-
             isSmoothing = false
-            defer { smoothingTask = nil }
 
             guard drawingRevision == sourceRevision else {
                 smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
@@ -166,9 +161,5 @@ final class NotesViewModel: ObservableObject {
                 ? "Applied interpolation smoothing."
                 : "Interpolation smoothing made no visible changes."
         }
-    }
-
-    deinit {
-        smoothingTask?.cancel()
     }
 }
