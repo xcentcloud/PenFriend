@@ -202,9 +202,10 @@ final class NotesViewModel: ObservableObject {
             try? await Task.detached {
                 try await storage.ensureLocalFallbackNotebookExists()
             }.value
-            if let fallbackSnapshot = try? await Task.detached {
+            let fallbackSnapshot = try? await Task.detached {
                 try await storage.loadLocalSnapshot()
-            }.value {
+            }.value
+            if let fallbackSnapshot {
                 await MainActor.run {
                     isRestoringStoredPages = true
                     defer { isRestoringStoredPages = false }
@@ -235,8 +236,11 @@ final class NotesViewModel: ObservableObject {
     }
 
     func refreshUndoState() {
-        canUndo = undoManager?.canUndo ?? false
-        canRedo = undoManager?.canRedo ?? false
+        // Only publish when the value actually changes to avoid redundant view updates.
+        let newCanUndo = undoManager?.canUndo ?? false
+        let newCanRedo = undoManager?.canRedo ?? false
+        if canUndo != newCanUndo { canUndo = newCanUndo }
+        if canRedo != newCanRedo { canRedo = newCanRedo }
     }
 
     private func transitionDrawing(from previousDrawing: PKDrawing, to nextDrawing: PKDrawing, actionName: String) {

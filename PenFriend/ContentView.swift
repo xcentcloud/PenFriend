@@ -95,7 +95,10 @@ struct ContentView: View {
             Label(viewModel.storageStatus, systemImage: viewModel.storageStatusIconName)
                 .font(.footnote)
                 .foregroundStyle(.primary)
-                .accessibilityLiveRegion(.polite)
+                .onChange(of: viewModel.storageStatus) { _, newStatus in
+                    // Announce storage changes so VoiceOver users hear them without moving focus.
+                    AccessibilityNotification.Announcement(newStatus).post()
+                }
 
             Button {
                 viewModel.smoothCurrentDrawing()
@@ -110,7 +113,11 @@ struct ContentView: View {
                 .opacity(viewModel.smoothingStatus == nil ? 0 : 1)
                 .accessibilityLabel("Smoothing status")
                 .accessibilityValue(viewModel.smoothingStatus ?? "No smoothing status")
-                .accessibilityLiveRegion(.polite)
+                .onChange(of: viewModel.smoothingStatus) { _, newStatus in
+                    if let newStatus {
+                        AccessibilityNotification.Announcement(newStatus).post()
+                    }
+                }
         }
     }
 }

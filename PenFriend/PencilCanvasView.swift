@@ -34,13 +34,24 @@ struct PencilCanvasView: UIViewRepresentable {
         if context.coordinator.suppressNextUIViewSync {
             context.coordinator.suppressNextUIViewSync = false
         } else if context.coordinator.lastCanvasDrawingData != updatedDrawingData {
+            // Setting the drawing fires the delegate synchronously; ignore that callback
+            // so we don't write back into the binding during a SwiftUI view update.
+            context.coordinator.isApplyingDrawingFromSwiftUI = true
             uiView.drawing = drawing
+            context.coordinator.isApplyingDrawingFromSwiftUI = false
         }
         context.coordinator.lastCanvasDrawingData = updatedDrawingData
 
         applySelectedTool(to: uiView)
         context.coordinator.installToolPickerIfNeeded(for: uiView)
-        onUndoStateChange(uiView.undoManager)
+
+        // Defer undo-state reporting until after the current view update finishes,
+        // since it publishes changes on the view model.
+        let onUndoStateChange = onUndoStateChange
+        let undoManager = uiView.undoManager
+        Task { @MainActor in
+            onUndoStateChange(undoManager)
+        }
     }
 
     private func applySelectedTool(to canvasView: PKCanvasView) {
@@ -64,12 +75,14 @@ struct PencilCanvasView: UIViewRepresentable {
         private weak var observedCanvasView: PKCanvasView?
         var suppressNextUIViewSync = false
         var lastCanvasDrawingData = Data()
+        var isApplyingDrawingFromSwiftUI = false
 
         init(_ parent: PencilCanvasView) {
             self.parent = parent
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+            guard !isApplyingDrawingFromSwiftUI else { return }
             suppressNextUIViewSync = true
             lastCanvasDrawingData = canvasView.drawing.dataRepresentation()
             parent.drawing = canvasView.drawing
@@ -89,7 +102,6 @@ struct PencilCanvasView: UIViewRepresentable {
 
             toolPicker.setVisible(true, forFirstResponder: canvasView)
             canvasView.becomeFirstResponder()
-            parent.onUndoStateChange(canvasView.undoManager)
         }
 
         deinit {

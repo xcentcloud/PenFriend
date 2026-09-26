@@ -52,11 +52,11 @@ final class StrokeSmoothingService {
 
         if useCustomModel {
             guard let predictor else {
-                return fallbackResult(strokes: originalStrokes, status: .customModelUnavailable)
+                return Self.fallbackResult(strokes: originalStrokes, status: .customModelUnavailable)
             }
 
             guard let customResult = try? predictor.predict(from: originalStrokes, confidenceThreshold: confidenceThreshold) else {
-                return fallbackResult(strokes: originalStrokes, status: .customModelPredictionFailed)
+                return Self.fallbackResult(strokes: originalStrokes, status: .customModelPredictionFailed)
             }
 
             let smoothedDrawing = PKDrawing(strokes: customResult.strokes)
@@ -69,7 +69,7 @@ final class StrokeSmoothingService {
             )
         }
 
-        return fallbackResult(strokes: originalStrokes, status: .interpolationOnly)
+        return Self.fallbackResult(strokes: originalStrokes, status: .interpolationOnly)
     }
 
     private static func fallbackResult(

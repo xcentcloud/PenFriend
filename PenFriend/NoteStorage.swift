@@ -23,10 +23,10 @@ struct NoteStorageSnapshot: Sendable {
 }
 
 protocol NoteStorageControlling: Sendable {
-    func loadSnapshot() throws -> NoteStorageSnapshot
-    func loadLocalSnapshot() throws -> NoteStorageSnapshot
-    func savePages(_ pages: [NotePage]) throws -> NoteStorageLocation
-    func ensureLocalFallbackNotebookExists() throws
+    func loadSnapshot() async throws -> NoteStorageSnapshot
+    func loadLocalSnapshot() async throws -> NoteStorageSnapshot
+    func savePages(_ pages: [NotePage]) async throws -> NoteStorageLocation
+    func ensureLocalFallbackNotebookExists() async throws
 }
 
 private struct StoredNotebook: Codable {
@@ -89,7 +89,7 @@ actor NoteStorage: NoteStorageControlling {
         let iCloudNotebook: StoredNotebook?
         do {
             iCloudNotebook = try iCloudURL.flatMap { url in
-                fileManager.fileExists(atPath: url.path) ? loadNotebook(from: url) : nil
+                try fileManager.fileExists(atPath: url.path) ? loadNotebook(from: url) : nil
             }
         } catch {
             cachedICloudNotebookURL = nil
