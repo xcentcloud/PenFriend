@@ -23,7 +23,19 @@ struct NoteStorageSnapshot {
 }
 
 private struct StoredNotebook: Codable {
+    var updatedAt: Date
     var pages: [StoredNotePage]
+
+    init(updatedAt: Date = Date(), pages: [StoredNotePage]) {
+        self.updatedAt = updatedAt
+        self.pages = pages
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? .distantPast
+        pages = try container.decode([StoredNotePage].self, forKey: .pages)
+    }
 }
 
 private struct StoredNotePage: Codable {
@@ -63,30 +75,55 @@ actor NoteStorage {
     func loadSnapshot() throws -> NoteStorageSnapshot {
         let iCloudURL = try makeICloudNotebookURL()
         let localURL = try makeLocalNotebookURL()
+        let iCloudNotebook = try iCloudURL.flatMap { url in
+            fileManager.fileExists(atPath: url.path) ? loadNotebook(from: url) : nil
+        }
+        let localNotebook = try fileManager.fileExists(atPath: localURL.path) ? loadNotebook(from: localURL) : nil
 
-        if let iCloudURL, fileManager.fileExists(atPath: iCloudURL.path) {
+        if let iCloudURL, let iCloudNotebook, let localNotebook {
+            if localNotebook.updatedAt > iCloudNotebook.updatedAt {
+                try write(notebook: localNotebook, to: iCloudURL)
+                try? fileManager.removeItem(at: localURL)
+                return NoteStorageSnapshot(
+                    pages: try makePages(from: localNotebook),
+                    location: .iCloud,
+                    didMigrateFromLocalStorage: true,
+                    shouldCreateInitialFile: false
+                )
+            }
+
+            try? fileManager.removeItem(at: localURL)
             return NoteStorageSnapshot(
-                pages: try loadPages(from: iCloudURL),
+                pages: try makePages(from: iCloudNotebook),
                 location: .iCloud,
                 didMigrateFromLocalStorage: false,
                 shouldCreateInitialFile: false
             )
         }
 
-        if fileManager.fileExists(atPath: localURL.path) {
-            let pages = try loadPages(from: localURL)
+        if let iCloudNotebook {
+            return NoteStorageSnapshot(
+                pages: try makePages(from: iCloudNotebook),
+                location: .iCloud,
+                didMigrateFromLocalStorage: false,
+                shouldCreateInitialFile: false
+            )
+        }
+
+        if let localNotebook {
             if let iCloudURL {
-                try write(pages: pages, to: iCloudURL)
+                try write(notebook: localNotebook, to: iCloudURL)
                 try? fileManager.removeItem(at: localURL)
                 return NoteStorageSnapshot(
-                    pages: pages,
+                    pages: try makePages(from: localNotebook),
                     location: .iCloud,
                     didMigrateFromLocalStorage: true,
                     shouldCreateInitialFile: false
                 )
             }
+
             return NoteStorageSnapshot(
-                pages: pages,
+                pages: try makePages(from: localNotebook),
                 location: .local,
                 didMigrateFromLocalStorage: false,
                 shouldCreateInitialFile: false
@@ -103,38 +140,41 @@ actor NoteStorage {
 
     func savePages(_ pages: [NotePage]) throws -> NoteStorageLocation {
         let pagesToPersist = pages.isEmpty ? [NotePage()] : pages
+        let notebook = StoredNotebook(
+            pages: pagesToPersist.map { page in
+                StoredNotePage(id: page.id, drawingData: page.drawing.dataRepresentation())
+            }
+        )
 
         if let iCloudURL = try makeICloudNotebookURL() {
             do {
-                try write(pages: pagesToPersist, to: iCloudURL)
+                try write(notebook: notebook, to: iCloudURL)
                 return .iCloud
             } catch {
                 let localURL = try makeLocalNotebookURL()
-                try write(pages: pagesToPersist, to: localURL)
+                try write(notebook: notebook, to: localURL)
                 return .local
             }
         }
 
         let localURL = try makeLocalNotebookURL()
-        try write(pages: pagesToPersist, to: localURL)
+        try write(notebook: notebook, to: localURL)
         return .local
     }
 
-    private func loadPages(from fileURL: URL) throws -> [NotePage] {
+    private func loadNotebook(from fileURL: URL) throws -> StoredNotebook {
         let data = try Data(contentsOf: fileURL)
-        let notebook = try JSONDecoder().decode(StoredNotebook.self, from: data)
+        return try JSONDecoder().decode(StoredNotebook.self, from: data)
+    }
+
+    private func makePages(from notebook: StoredNotebook) throws -> [NotePage] {
         let pages = try notebook.pages.map { page in
             try NotePage(id: page.id, drawing: PKDrawing(data: page.drawingData))
         }
         return pages.isEmpty ? [NotePage()] : pages
     }
 
-    private func write(pages: [NotePage], to fileURL: URL) throws {
-        let notebook = StoredNotebook(
-            pages: pages.map { page in
-                StoredNotePage(id: page.id, drawingData: page.drawing.dataRepresentation())
-            }
-        )
+    private func write(notebook: StoredNotebook, to fileURL: URL) throws {
         let data = try JSONEncoder().encode(notebook)
         try data.write(to: fileURL, options: [.atomic])
     }

@@ -206,6 +206,7 @@ final class NotesViewModel: ObservableObject {
         guard !isLoadingPageDrawing, !isRestoringStoredPages else { return }
         saveRequestID &+= 1
         let requestID = saveRequestID
+        let requestedPages = immediate ? pages : nil
 
         saveTask?.cancel()
         saveTask = Task { @MainActor in
@@ -213,7 +214,7 @@ final class NotesViewModel: ObservableObject {
                 try? await Task.sleep(for: .milliseconds(500))
             }
             guard !Task.isCancelled else { return }
-            let pagesToSave = pages
+            let pagesToSave = requestedPages ?? pages
 
             do {
                 let location = try await noteStorage.savePages(pagesToSave)
