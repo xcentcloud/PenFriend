@@ -64,6 +64,29 @@ final class StrokeSmoothingServiceTests: XCTestCase {
         XCTAssertEqual(result.unchangedStrokeCount, 1)
     }
 
+    func testSmoothWithCustomModelAppliedUsesPredictedStroke() {
+        let originalStroke = makeStroke(points: [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 10, y: 5),
+            CGPoint(x: 20, y: 0)
+        ])
+        let predictedStroke = makeStroke(points: [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: 10, y: 3),
+            CGPoint(x: 20, y: 0)
+        ])
+        let drawing = PKDrawing(strokes: [originalStroke])
+        let predictor = FakePredictor(result: StrokePredictionResult(strokes: [predictedStroke], unchangedStrokeCount: 0))
+        let service = StrokeSmoothingService(predictor: predictor)
+
+        let result = service.smooth(drawing, useCustomModel: true)
+
+        XCTAssertTrue(isStatus(result.modelStatus, .customModelApplied))
+        XCTAssertTrue(result.didChange)
+        let points = Array(result.drawing.strokes[0].path)
+        XCTAssertEqual(points[1].location.y, 3, accuracy: 0.0001)
+    }
+
     private func isStatus(_ lhs: StrokeSmoothingModelStatus, _ rhs: StrokeSmoothingModelStatus) -> Bool {
         switch (lhs, rhs) {
         case (.interpolationOnly, .interpolationOnly),

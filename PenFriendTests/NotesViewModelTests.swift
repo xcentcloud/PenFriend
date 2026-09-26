@@ -54,6 +54,21 @@ final class NotesViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.storageStatus, NoteStorageLocation.iCloud.statusMessage)
     }
 
+    func testRestoreIfNeededShowsMigrationStatusWhenLocalNotesMoved() async {
+        let storage = MockNoteStorage(snapshot: NoteStorageSnapshot(
+            pages: [NotePage()],
+            location: .iCloud,
+            didMigrateFromLocalStorage: true,
+            shouldCreateInitialFile: true
+        ))
+        let viewModel = NotesViewModel(noteStorage: storage)
+
+        await viewModel.restoreIfNeeded()
+
+        XCTAssertTrue(isICloud(viewModel.storageLocation))
+        XCTAssertEqual(viewModel.storageStatus, "Moved existing notes into iCloud.")
+    }
+
     private func isICloud(_ location: NoteStorageLocation) -> Bool {
         if case .iCloud = location { return true }
         return false
