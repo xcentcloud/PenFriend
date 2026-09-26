@@ -34,9 +34,10 @@ final class StrokeSmoothingService {
         if useCustomModel,
            let predictor,
            let customResult = try? predictor.predict(from: originalStrokes, confidenceThreshold: confidenceThreshold) {
-            let didChange = !Self.strokesEqual(originalStrokes, customResult.strokes)
+            let smoothedDrawing = PKDrawing(strokes: customResult.strokes)
+            let didChange = smoothedDrawing.dataRepresentation() != drawing.dataRepresentation()
             return StrokeSmoothingResult(
-                drawing: PKDrawing(strokes: customResult.strokes),
+                drawing: smoothedDrawing,
                 usedCustomModel: true,
                 unchangedStrokeCount: customResult.unchangedStrokeCount,
                 didChange: didChange
@@ -44,9 +45,10 @@ final class StrokeSmoothingService {
         }
 
         let smoothed = originalStrokes.map(Self.interpolateStroke)
-        let didChange = !Self.strokesEqual(originalStrokes, smoothed)
+        let smoothedDrawing = PKDrawing(strokes: smoothed)
+        let didChange = smoothedDrawing.dataRepresentation() != drawing.dataRepresentation()
         return StrokeSmoothingResult(
-            drawing: PKDrawing(strokes: smoothed),
+            drawing: smoothedDrawing,
             usedCustomModel: false,
             unchangedStrokeCount: 0,
             didChange: didChange
@@ -86,29 +88,6 @@ final class StrokeSmoothingService {
         return rebuildStroke(from: stroke, with: smoothedPath)
     }
 
-    private static func strokesEqual(_ lhs: [PKStroke], _ rhs: [PKStroke]) -> Bool {
-        guard lhs.count == rhs.count else { return false }
-
-        for (leftStroke, rightStroke) in zip(lhs, rhs) {
-            let leftPoints = Array(leftStroke.path)
-            let rightPoints = Array(rightStroke.path)
-            guard leftPoints.count == rightPoints.count else { return false }
-
-            for (leftPoint, rightPoint) in zip(leftPoints, rightPoints) {
-                guard leftPoint.location == rightPoint.location,
-                      leftPoint.timeOffset == rightPoint.timeOffset,
-                      leftPoint.size == rightPoint.size,
-                      leftPoint.opacity == rightPoint.opacity,
-                      leftPoint.force == rightPoint.force,
-                      leftPoint.azimuth == rightPoint.azimuth,
-                      leftPoint.altitude == rightPoint.altitude else {
-                    return false
-                }
-            }
-        }
-
-        return true
-    }
 }
 
 protocol StrokeSmoothingPredicting {
@@ -190,7 +169,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         let confidence = output.featureValue(for: "stroke_confidence")?.multiArrayValue
         let pointCounts = template.map { Array($0.path).count }
         let expectedValueCount = pointCounts.reduce(0, +) * 9
-        guard points.count >= expectedValueCount else { throw StrokePredictionError.invalidOutput }
+        guard points.count == expectedValueCount else { throw StrokePredictionError.invalidOutput }
 
         var rebuiltStrokes = [PKStroke]()
         rebuiltStrokes.reserveCapacity(template.count)
