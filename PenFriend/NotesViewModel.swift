@@ -88,7 +88,7 @@ final class NotesViewModel: ObservableObject {
             return
         }
 
-        applyDrawingWithUndo(result.drawing, undoActionName: "Smooth Handwriting")
+        transitionDrawing(from: currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
 
         if result.usedCustomModel {
             smoothingStatus = result.unchangedStrokeCount > 0
@@ -113,21 +113,12 @@ final class NotesViewModel: ObservableObject {
         canRedo = undoManager?.canRedo ?? false
     }
 
-    private func applyDrawingWithUndo(_ drawing: PKDrawing, undoActionName: String) {
-        let previousDrawing = currentDrawing
+    private func transitionDrawing(from previousDrawing: PKDrawing, to nextDrawing: PKDrawing, actionName: String) {
         undoManager?.registerUndo(withTarget: self) { target in
-            target.applyDrawingForUndo(previousDrawing, redoDrawing: drawing, undoActionName: undoActionName)
+            target.transitionDrawing(from: nextDrawing, to: previousDrawing, actionName: actionName)
         }
-        undoManager?.setActionName(undoActionName)
-        applyDrawing(drawing)
-    }
-
-    private func applyDrawingForUndo(_ drawing: PKDrawing, redoDrawing: PKDrawing, undoActionName: String) {
-        undoManager?.registerUndo(withTarget: self) { target in
-            target.applyDrawingForUndo(redoDrawing, redoDrawing: drawing, undoActionName: undoActionName)
-        }
-        undoManager?.setActionName(undoActionName)
-        applyDrawing(drawing)
+        undoManager?.setActionName(actionName)
+        applyDrawing(nextDrawing)
     }
 
     private func applyDrawing(_ drawing: PKDrawing) {

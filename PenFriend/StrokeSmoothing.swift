@@ -170,6 +170,9 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         let pointCounts = template.map { Array($0.path).count }
         let expectedValueCount = pointCounts.reduce(0, +) * 9
         guard points.count == expectedValueCount else { throw StrokePredictionError.invalidOutput }
+        if let confidence, confidence.count != template.count {
+            throw StrokePredictionError.invalidOutput
+        }
 
         var rebuiltStrokes = [PKStroke]()
         rebuiltStrokes.reserveCapacity(template.count)
