@@ -161,6 +161,7 @@ final class NotesViewModel: ObservableObject {
         do {
             let snapshot = try await noteStorage.loadSnapshot()
             isRestoringStoredPages = true
+            defer { isRestoringStoredPages = false }
             pages = snapshot.pages
             selectedPageIndex = min(selectedPageIndex, max(0, pages.count - 1))
             if pages.isEmpty {
@@ -168,7 +169,6 @@ final class NotesViewModel: ObservableObject {
                 selectedPageIndex = 0
             }
             loadCurrentPageDrawing()
-            isRestoringStoredPages = false
             storageStatus = snapshot.location.statusMessage
             if snapshot.didMigrateFromLocalStorage {
                 storageStatus = "Moved existing notes into iCloud."

@@ -63,6 +63,7 @@ actor NoteStorage {
     private let fileManager: FileManager
     private let notebookFileName = "Notebook.json"
     private let ubiquityContainerIdentifier: String?
+    private var cachedICloudNotebookURL: URL?
 
     init(
         fileManager: FileManager = .default,
@@ -151,7 +152,6 @@ actor NoteStorage {
                 try write(notebook: notebook, to: iCloudURL)
                 return .iCloud
             } catch {
-                try? fileManager.removeItem(at: iCloudURL)
                 let localURL = try makeLocalNotebookURL()
                 try write(notebook: notebook, to: localURL)
                 return .local
@@ -181,6 +181,10 @@ actor NoteStorage {
     }
 
     private func makeICloudNotebookURL() throws -> URL? {
+        if let cachedICloudNotebookURL {
+            return cachedICloudNotebookURL
+        }
+
         guard let containerURL = fileManager.url(forUbiquityContainerIdentifier: ubiquityContainerIdentifier) else {
             return nil
         }
@@ -189,7 +193,9 @@ actor NoteStorage {
             .appendingPathComponent("Documents", isDirectory: true)
             .appendingPathComponent("Notes", isDirectory: true)
         try fileManager.createDirectory(at: documentsURL, withIntermediateDirectories: true)
-        return documentsURL.appendingPathComponent(notebookFileName)
+        let notebookURL = documentsURL.appendingPathComponent(notebookFileName)
+        cachedICloudNotebookURL = notebookURL
+        return notebookURL
     }
 
     private func makeLocalNotebookURL() throws -> URL {
