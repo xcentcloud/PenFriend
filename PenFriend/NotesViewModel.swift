@@ -51,6 +51,7 @@ final class NotesViewModel: ObservableObject {
     private var isRestoringStoredPages = false
     private var drawingRevision: UInt64 = 0
     private var smoothingRequestID: UInt64 = 0
+    private var saveRequestID: UInt64 = 0
     private var smoothingTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
     private let strokeSmoothingService = StrokeSmoothingService()
@@ -202,7 +203,8 @@ final class NotesViewModel: ObservableObject {
 
     private func scheduleSavePages(immediate: Bool = false) {
         guard !isLoadingPageDrawing, !isRestoringStoredPages else { return }
-        let pagesToSave = pages
+        saveRequestID &+= 1
+        let requestID = saveRequestID
 
         saveTask?.cancel()
         saveTask = Task { @MainActor in
@@ -210,13 +212,16 @@ final class NotesViewModel: ObservableObject {
                 try? await Task.sleep(for: .milliseconds(500))
             }
             guard !Task.isCancelled else { return }
+            let pagesToSave = pages
 
             do {
                 let location = try await noteStorage.savePages(pagesToSave)
                 guard !Task.isCancelled else { return }
+                guard requestID == saveRequestID else { return }
                 storageStatus = location.statusMessage
             } catch {
                 guard !Task.isCancelled else { return }
+                guard requestID == saveRequestID else { return }
                 storageStatus = "Couldn't save notes right now. Keep the app open and try again."
             }
         }
