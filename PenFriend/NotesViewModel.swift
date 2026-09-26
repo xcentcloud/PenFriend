@@ -91,9 +91,14 @@ final class NotesViewModel: ObservableObject {
 
         smoothingTask?.cancel()
         smoothingTask = Task { [strokeSmoothingService] in
-            let result = await Task.detached(priority: .userInitiated) {
+            let workerTask = Task.detached(priority: .userInitiated) {
                 strokeSmoothingService.smooth(sourceDrawing, useCustomModel: useCustomModel)
-            }.value
+            }
+            let result = await withTaskCancellationHandler {
+                await workerTask.value
+            } onCancel: {
+                workerTask.cancel()
+            }
             guard !Task.isCancelled else { return }
 
             await MainActor.run {

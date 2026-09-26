@@ -227,15 +227,20 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         let pointCounts = template.map { $0.path.count }
         let expectedValueCount = pointCounts.reduce(0, +) * strokeFeatureWidth
         guard points.count == expectedValueCount else { throw StrokePredictionError.invalidOutput }
-        guard outputPointCounts.count == pointCounts.count else { throw StrokePredictionError.invalidOutput }
-        for (index, inputCount) in pointCounts.enumerated() {
-            guard outputPointCounts[index].intValue == inputCount else { throw StrokePredictionError.invalidOutput }
-        }
-        if let confidence, !hasValidConfidenceShape(confidence, expectedStrokeCount: template.count) {
-            throw StrokePredictionError.invalidOutput
-        }
         if !hasValidOutputShape(points, expectedValueCount: expectedValueCount, expectedPointCount: pointCounts.reduce(0, +)) {
             throw StrokePredictionError.invalidOutput
+        }
+
+        let decodedOutputPointCounts = try decodeIntVector(outputPointCounts, expectedCount: pointCounts.count)
+        for (index, inputCount) in pointCounts.enumerated() {
+            guard decodedOutputPointCounts[index] == inputCount else { throw StrokePredictionError.invalidOutput }
+        }
+
+        let decodedConfidence: [Double]?
+        if let confidence {
+            decodedConfidence = try decodeDoubleVector(confidence, expectedCount: template.count)
+        } else {
+            decodedConfidence = nil
         }
 
         var rebuiltStrokes = [PKStroke]()
@@ -246,8 +251,8 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
 
         for (strokeIndex, stroke) in template.enumerated() {
             let isLowConfidence: Bool
-            if let confidence {
-                isLowConfidence = strokeIndex >= confidence.count || confidence[strokeIndex].doubleValue < confidenceThreshold
+            if let decodedConfidence {
+                isLowConfidence = decodedConfidence[strokeIndex] < confidenceThreshold
             } else {
                 isLowConfidence = false
             }
@@ -306,14 +311,21 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         return false
     }
 
-    private static func hasValidConfidenceShape(_ confidence: MLMultiArray, expectedStrokeCount: Int) -> Bool {
-        let shape = confidence.shape.map(\.intValue)
-        if shape == [expectedStrokeCount] {
-            return true
+    private static func decodeDoubleVector(_ values: MLMultiArray, expectedCount: Int) throws -> [Double] {
+        let shape = values.shape.map(\.intValue)
+        if shape == [expectedCount] {
+            return (0..<expectedCount).map { values[$0].doubleValue }
         }
-        if shape == [1, expectedStrokeCount] || shape == [expectedStrokeCount, 1] {
-            return true
+        if shape == [1, expectedCount] {
+            return (0..<expectedCount).map { values[[0, $0] as [NSNumber]].doubleValue }
         }
-        return false
+        if shape == [expectedCount, 1] {
+            return (0..<expectedCount).map { values[[$0, 0] as [NSNumber]].doubleValue }
+        }
+        throw StrokePredictionError.invalidOutput
+    }
+
+    private static func decodeIntVector(_ values: MLMultiArray, expectedCount: Int) throws -> [Int] {
+        try decodeDoubleVector(values, expectedCount: expectedCount).map { Int($0) }
     }
 }
