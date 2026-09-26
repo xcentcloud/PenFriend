@@ -1,7 +1,7 @@
 import Foundation
 import PencilKit
 
-enum NoteStorageLocation {
+enum NoteStorageLocation: Sendable {
     case iCloud
     case local
 
@@ -15,11 +15,17 @@ enum NoteStorageLocation {
     }
 }
 
-struct NoteStorageSnapshot {
+struct NoteStorageSnapshot: Sendable {
     let pages: [NotePage]
     let location: NoteStorageLocation
     let didMigrateFromLocalStorage: Bool
     let shouldCreateInitialFile: Bool
+}
+
+protocol NoteStorageControlling: Sendable {
+    func loadSnapshot() async throws -> NoteStorageSnapshot
+    func savePages(_ pages: [NotePage]) async throws -> NoteStorageLocation
+    func ensureLocalFallbackNotebookExists() async throws
 }
 
 private struct StoredNotebook: Codable {
@@ -59,7 +65,7 @@ enum NoteStorageError: LocalizedError {
     }
 }
 
-actor NoteStorage {
+actor NoteStorage: NoteStorageControlling {
     private let fileManager: FileManager
     private let notebookFileName = "Notebook.json"
     private let localFallbackMarkerFileName = "PendingLocalFallback.marker"
@@ -74,7 +80,7 @@ actor NoteStorage {
         self.ubiquityContainerIdentifier = ubiquityContainerIdentifier
     }
 
-    func loadSnapshot() throws -> NoteStorageSnapshot {
+    func loadSnapshot() async throws -> NoteStorageSnapshot {
         let iCloudURL = try makeICloudNotebookURL()
         let localURL = try makeLocalNotebookURL()
         let localNotebook = try fileManager.fileExists(atPath: localURL.path) ? loadNotebook(from: localURL) : nil
@@ -172,7 +178,7 @@ actor NoteStorage {
         )
     }
 
-    func savePages(_ pages: [NotePage]) throws -> NoteStorageLocation {
+    func savePages(_ pages: [NotePage]) async throws -> NoteStorageLocation {
         let pagesToPersist = pages.isEmpty ? [NotePage()] : pages
         let notebook = StoredNotebook(
             pages: pagesToPersist.map { page in
@@ -199,7 +205,7 @@ actor NoteStorage {
         return .local
     }
 
-    func ensureLocalFallbackNotebookExists() throws {
+    func ensureLocalFallbackNotebookExists() async throws {
         let localURL = try makeLocalNotebookURL()
         guard !fileManager.fileExists(atPath: localURL.path) else {
             return

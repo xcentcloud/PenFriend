@@ -57,9 +57,10 @@ final class NotesViewModel: ObservableObject {
     private var saveTask: Task<Void, Never>?
     private var hasRestoredPages = false
     private let strokeSmoothingService = StrokeSmoothingService()
-    private let noteStorage = NoteStorage()
+    private let noteStorage: any NoteStorageControlling
 
-    init() {
+    init(noteStorage: any NoteStorageControlling = NoteStorage()) {
+        self.noteStorage = noteStorage
         loadCurrentPageDrawing()
     }
 
@@ -174,7 +175,10 @@ final class NotesViewModel: ObservableObject {
     private func restorePages() async {
         var shouldCreateInitialFile = false
         do {
-            let snapshot = try await noteStorage.loadSnapshot()
+            let storage = noteStorage
+            let snapshot = try await Task.detached {
+                try await storage.loadSnapshot()
+            }.value
             do {
                 isRestoringStoredPages = true
                 defer { isRestoringStoredPages = false }
@@ -196,7 +200,10 @@ final class NotesViewModel: ObservableObject {
                 scheduleSavePages(immediate: true)
             }
         } catch {
-            try? await noteStorage.ensureLocalFallbackNotebookExists()
+            let storage = noteStorage
+            try? await Task.detached {
+                try await storage.ensureLocalFallbackNotebookExists()
+            }.value
             isRestoringStoredPages = false
             pages = [NotePage()]
             selectedPageIndex = 0
@@ -242,7 +249,10 @@ final class NotesViewModel: ObservableObject {
             let pagesToSave = requestedPages ?? pages
 
             do {
-                let location = try await noteStorage.savePages(pagesToSave)
+                let storage = noteStorage
+                let location = try await Task.detached {
+                    try await storage.savePages(pagesToSave)
+                }.value
                 guard !Task.isCancelled else { return }
                 guard requestID == saveRequestID else { return }
                 storageLocation = location
