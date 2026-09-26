@@ -2,6 +2,10 @@ import Foundation
 import PencilKit
 import CoreML
 
+private func rebuildStroke(from stroke: PKStroke, with path: PKStrokePath) -> PKStroke {
+    PKStroke(ink: stroke.ink, path: path, transform: stroke.transform, mask: stroke.mask)
+}
+
 struct StrokeSmoothingResult {
     let drawing: PKDrawing
     let usedCustomModel: Bool
@@ -74,7 +78,7 @@ final class StrokeSmoothingService {
         }
 
         let smoothedPath = PKStrokePath(controlPoints: smoothedPoints, creationDate: stroke.path.creationDate)
-        return PKStroke(ink: stroke.ink, path: smoothedPath)
+        return rebuildStroke(from: stroke, with: smoothedPath)
     }
 }
 
@@ -203,7 +207,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
             }
 
             let path = PKStrokePath(controlPoints: smoothedPoints, creationDate: stroke.path.creationDate)
-            rebuiltStrokes.append(PKStroke(ink: stroke.ink, path: path))
+            rebuiltStrokes.append(rebuildStroke(from: stroke, with: path))
         }
 
         return StrokePredictionResult(strokes: rebuiltStrokes, unchangedStrokeCount: unchangedStrokeCount)

@@ -124,8 +124,9 @@ final class NotesViewModel: ObservableObject {
         }
 
         currentDrawing = drawing
-        guard pages.indices.contains(selectedPageIndex) else { return }
-        pages[selectedPageIndex].drawing = drawing
+        if pages.indices.contains(selectedPageIndex) {
+            pages[selectedPageIndex].drawing = drawing
+        }
         refreshUndoState()
     }
 }
