@@ -42,6 +42,7 @@ final class NotesViewModel: ObservableObject {
     private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
     private var drawingRevision: UInt64 = 0
+    private var smoothingTask: Task<Void, Never>?
     private let strokeSmoothingService = StrokeSmoothingService()
 
     init() {
@@ -90,24 +91,28 @@ final class NotesViewModel: ObservableObject {
         let useCustomModel = useCustomSmoothingModel
         isSmoothing = true
 
-        DispatchQueue.global(qos: .userInitiated).async { [strokeSmoothingService] in
-            let result = strokeSmoothingService.smooth(sourceDrawing, useCustomModel: useCustomModel)
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.isSmoothing = false
-                guard self.drawingRevision == sourceRevision else {
-                    self.smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
-                    return
-                }
+        smoothingTask?.cancel()
+        smoothingTask = Task { [strokeSmoothingService] in
+            let result = await Task.detached(priority: .userInitiated) {
+                strokeSmoothingService.smooth(sourceDrawing, useCustomModel: useCustomModel)
+            }.value
+            guard !Task.isCancelled else { return }
 
-                guard result.didChange else {
-                    self.smoothingStatus = self.statusMessage(for: result, changed: false)
-                    return
-                }
+            isSmoothing = false
+            defer { smoothingTask = nil }
 
-                self.transitionDrawing(from: self.currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
-                self.smoothingStatus = self.statusMessage(for: result, changed: true)
+            guard drawingRevision == sourceRevision else {
+                smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
+                return
             }
+
+            guard result.didChange else {
+                smoothingStatus = statusMessage(for: result, changed: false)
+                return
+            }
+
+            transitionDrawing(from: currentDrawing, to: result.drawing, actionName: "Smooth Handwriting")
+            smoothingStatus = statusMessage(for: result, changed: true)
         }
     }
 
@@ -161,5 +166,9 @@ final class NotesViewModel: ObservableObject {
                 ? "Applied interpolation smoothing."
                 : "Interpolation smoothing made no visible changes."
         }
+    }
+
+    deinit {
+        smoothingTask?.cancel()
     }
 }

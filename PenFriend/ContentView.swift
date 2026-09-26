@@ -95,12 +95,13 @@ struct ContentView: View {
             }
             .disabled(viewModel.currentDrawing.strokes.isEmpty || viewModel.isSmoothing)
 
-            if let smoothingStatus = viewModel.smoothingStatus {
-                Text(smoothingStatus)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLiveRegion(.polite)
-            }
+            Text(viewModel.smoothingStatus ?? " ")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .opacity(viewModel.smoothingStatus == nil ? 0 : 1)
+                .accessibilityLabel("Smoothing status")
+                .accessibilityValue(viewModel.smoothingStatus ?? "No smoothing status")
+                .accessibilityLiveRegion(.polite)
         }
     }
 }

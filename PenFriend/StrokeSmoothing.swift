@@ -292,7 +292,7 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         let shape = points.shape.map(\.intValue)
         let strides = points.strides.map(\.intValue)
 
-        if shape == [expectedValueCount] {
+        if shape == [expectedValueCount], strides == [1] {
             return true
         }
 
