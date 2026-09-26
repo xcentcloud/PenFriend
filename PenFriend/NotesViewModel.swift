@@ -2,8 +2,13 @@ import Foundation
 import PencilKit
 
 struct NotePage: Identifiable {
-    let id = UUID()
-    var drawing = PKDrawing()
+    let id: UUID
+    var drawing: PKDrawing
+
+    init(id: UUID = UUID(), drawing: PKDrawing = PKDrawing()) {
+        self.id = id
+        self.drawing = drawing
+    }
 }
 
 enum EditingTool: String, CaseIterable, Identifiable {
@@ -30,6 +35,7 @@ final class NotesViewModel: ObservableObject {
             guard !isLoadingPageDrawing else { return }
             guard pages.indices.contains(selectedPageIndex) else { return }
             pages[selectedPageIndex].drawing = currentDrawing
+            scheduleSavePages()
         }
     }
     @Published var selectedTool: EditingTool = .pen
@@ -38,16 +44,23 @@ final class NotesViewModel: ObservableObject {
     @Published private(set) var isSmoothing = false
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
+    @Published private(set) var storageStatus = "Checking iCloud note storage…"
 
     private var undoManager: UndoManager?
     private var isLoadingPageDrawing = false
+    private var isRestoringStoredPages = false
     private var drawingRevision: UInt64 = 0
     private var smoothingRequestID: UInt64 = 0
     private var smoothingTask: Task<Void, Never>?
+    private var saveTask: Task<Void, Never>?
     private let strokeSmoothingService = StrokeSmoothingService()
+    private let noteStorage = NoteStorage()
 
     init() {
         loadCurrentPageDrawing()
+        Task {
+            await restorePages()
+        }
     }
 
     var pageLabel: String {
@@ -56,6 +69,7 @@ final class NotesViewModel: ObservableObject {
 
     func addNewPage() {
         pages.append(NotePage())
+        scheduleSavePages()
         selectedPageIndex = max(0, pages.count - 1)
     }
 
@@ -141,6 +155,29 @@ final class NotesViewModel: ObservableObject {
         currentDrawing = pages[selectedPageIndex].drawing
     }
 
+    private func restorePages() async {
+        do {
+            let snapshot = try await noteStorage.loadSnapshot()
+            isRestoringStoredPages = true
+            pages = snapshot.pages
+            selectedPageIndex = min(selectedPageIndex, max(0, pages.count - 1))
+            if pages.isEmpty {
+                pages = [NotePage()]
+                selectedPageIndex = 0
+            }
+            loadCurrentPageDrawing()
+            isRestoringStoredPages = false
+            storageStatus = snapshot.location.statusMessage
+            if snapshot.didMigrateFromLocalStorage {
+                storageStatus = "Moved existing notes into iCloud."
+            }
+            scheduleSavePages(immediate: snapshot.shouldCreateInitialFile)
+        } catch {
+            isRestoringStoredPages = false
+            storageStatus = "Couldn't open saved notes. Keeping notes on this device for now."
+        }
+    }
+
     func refreshUndoState() {
         canUndo = undoManager?.canUndo ?? false
         canRedo = undoManager?.canRedo ?? false
@@ -160,6 +197,28 @@ final class NotesViewModel: ObservableObject {
             pages[selectedPageIndex].drawing = drawing
         }
         refreshUndoState()
+    }
+
+    private func scheduleSavePages(immediate: Bool = false) {
+        guard !isLoadingPageDrawing, !isRestoringStoredPages else { return }
+        let pagesToSave = pages
+
+        saveTask?.cancel()
+        saveTask = Task {
+            if !immediate {
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+            guard !Task.isCancelled else { return }
+
+            do {
+                let location = try await noteStorage.savePages(pagesToSave)
+                guard !Task.isCancelled else { return }
+                storageStatus = location.statusMessage
+            } catch {
+                guard !Task.isCancelled else { return }
+                storageStatus = "Couldn't save notes to iCloud. Notes stay on this device."
+            }
+        }
     }
 
     private func statusMessage(for result: StrokeSmoothingResult, changed: Bool) -> String {
@@ -190,5 +249,6 @@ final class NotesViewModel: ObservableObject {
 
     deinit {
         smoothingTask?.cancel()
+        saveTask?.cancel()
     }
 }
