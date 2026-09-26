@@ -208,7 +208,7 @@ final class NotesViewModel: ObservableObject {
                 try await storage.loadLocalSnapshot()
             }.value {
                 pages = fallbackSnapshot.pages
-                selectedPageIndex = 0
+                selectedPageIndex = min(selectedPageIndex, max(0, fallbackSnapshot.pages.count - 1))
                 loadCurrentPageDrawing()
                 storageLocation = .local
                 storageStatus = "Couldn't open iCloud notes. Restored local notes instead."
@@ -302,6 +302,11 @@ final class NotesViewModel: ObservableObject {
     }
 
     deinit {
+        let latestPages = pages
+        let storage = noteStorage
+        Task.detached {
+            try? await storage.savePages(latestPages)
+        }
         smoothingTask?.cancel()
         saveTask?.cancel()
     }

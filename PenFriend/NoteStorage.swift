@@ -85,6 +85,7 @@ actor NoteStorage: NoteStorageControlling {
         let iCloudURL = try makeICloudNotebookURL()
         let localURL = try makeLocalNotebookURL()
         let localNotebook = try fileManager.fileExists(atPath: localURL.path) ? loadNotebook(from: localURL) : nil
+        let hasPendingLocalFallback = try hasPendingLocalFallback()
         let iCloudNotebook: StoredNotebook?
         do {
             iCloudNotebook = try iCloudURL.flatMap { url in
@@ -96,13 +97,12 @@ actor NoteStorage: NoteStorageControlling {
                 return NoteStorageSnapshot(
                     pages: try makePages(from: localNotebook),
                     location: .local,
-                    didMigrateFromLocalStorage: false,
+                    didMigrateFromLocalStorage: hasPendingLocalFallback,
                     shouldCreateInitialFile: false
                 )
             }
             throw error
         }
-        let hasPendingLocalFallback = try hasPendingLocalFallback()
 
         if let iCloudURL, let localNotebook, hasPendingLocalFallback {
             try write(notebook: localNotebook, to: iCloudURL)
@@ -241,6 +241,7 @@ actor NoteStorage: NoteStorageControlling {
         }
 
         try write(notebook: notebook, to: localURL)
+        try markPendingLocalFallback()
         return .local
     }
 
