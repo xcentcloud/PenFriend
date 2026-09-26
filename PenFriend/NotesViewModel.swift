@@ -92,6 +92,10 @@ final class NotesViewModel: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.isSmoothing = false
+                guard self.currentDrawing.dataRepresentation() == sourceDrawing.dataRepresentation() else {
+                    self.smoothingStatus = "Drawing changed before smoothing completed. Run smoothing again."
+                    return
+                }
 
                 guard result.didChange else {
                     self.smoothingStatus = self.statusMessage(for: result, changed: false)
