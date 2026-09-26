@@ -175,8 +175,12 @@ final class NotesViewModel: ObservableObject {
             }
             scheduleSavePages(immediate: snapshot.shouldCreateInitialFile)
         } catch {
+            try? await noteStorage.prepareLocalFallbackNotebook()
             isRestoringStoredPages = false
-            storageStatus = "Couldn't open saved notes. Keeping notes on this device for now."
+            pages = [NotePage()]
+            selectedPageIndex = 0
+            loadCurrentPageDrawing()
+            storageStatus = "Couldn't open saved notes. Started a new local notebook."
         }
     }
 

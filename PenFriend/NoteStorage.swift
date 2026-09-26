@@ -62,6 +62,7 @@ enum NoteStorageError: LocalizedError {
 actor NoteStorage {
     private let fileManager: FileManager
     private let notebookFileName = "Notebook.json"
+    private let localFallbackMarkerFileName = "PendingLocalFallback.marker"
     private let ubiquityContainerIdentifier: String?
     private var cachedICloudNotebookURL: URL?
 
@@ -76,15 +77,40 @@ actor NoteStorage {
     func loadSnapshot() throws -> NoteStorageSnapshot {
         let iCloudURL = try makeICloudNotebookURL()
         let localURL = try makeLocalNotebookURL()
-        let iCloudNotebook = try iCloudURL.flatMap { url in
-            fileManager.fileExists(atPath: url.path) ? loadNotebook(from: url) : nil
-        }
         let localNotebook = try fileManager.fileExists(atPath: localURL.path) ? loadNotebook(from: localURL) : nil
+        let iCloudNotebook: StoredNotebook?
+        do {
+            iCloudNotebook = try iCloudURL.flatMap { url in
+                fileManager.fileExists(atPath: url.path) ? loadNotebook(from: url) : nil
+            }
+        } catch {
+            cachedICloudNotebookURL = nil
+            if let localNotebook {
+                return NoteStorageSnapshot(
+                    pages: try makePages(from: localNotebook),
+                    location: .local,
+                    didMigrateFromLocalStorage: false,
+                    shouldCreateInitialFile: false
+                )
+            }
+            throw error
+        }
+        let hasPendingLocalFallback = try hasPendingLocalFallback()
+
+        if let iCloudURL, let localNotebook, hasPendingLocalFallback {
+            try write(notebook: localNotebook, to: iCloudURL)
+            try clearPendingLocalFallback()
+            return NoteStorageSnapshot(
+                pages: try makePages(from: localNotebook),
+                location: .iCloud,
+                didMigrateFromLocalStorage: true,
+                shouldCreateInitialFile: false
+            )
+        }
 
         if let iCloudURL, let iCloudNotebook, let localNotebook {
             if localNotebook.updatedAt > iCloudNotebook.updatedAt {
                 try write(notebook: localNotebook, to: iCloudURL)
-                try? fileManager.removeItem(at: localURL)
                 return NoteStorageSnapshot(
                     pages: try makePages(from: localNotebook),
                     location: .iCloud,
@@ -93,7 +119,6 @@ actor NoteStorage {
                 )
             }
 
-            try? fileManager.removeItem(at: localURL)
             return NoteStorageSnapshot(
                 pages: try makePages(from: iCloudNotebook),
                 location: .iCloud,
@@ -114,7 +139,6 @@ actor NoteStorage {
         if let localNotebook {
             if let iCloudURL {
                 try write(notebook: localNotebook, to: iCloudURL)
-                try? fileManager.removeItem(at: localURL)
                 return NoteStorageSnapshot(
                     pages: try makePages(from: localNotebook),
                     location: .iCloud,
@@ -146,21 +170,37 @@ actor NoteStorage {
                 StoredNotePage(id: page.id, drawingData: page.drawing.dataRepresentation())
             }
         )
+        let localURL = try makeLocalNotebookURL()
 
         if let iCloudURL = try makeICloudNotebookURL() {
             do {
                 try write(notebook: notebook, to: iCloudURL)
+                try write(notebook: notebook, to: localURL)
+                try clearPendingLocalFallback()
                 return .iCloud
             } catch {
-                let localURL = try makeLocalNotebookURL()
+                cachedICloudNotebookURL = nil
                 try write(notebook: notebook, to: localURL)
+                try markPendingLocalFallback()
                 return .local
             }
         }
 
-        let localURL = try makeLocalNotebookURL()
         try write(notebook: notebook, to: localURL)
+        try markPendingLocalFallback()
         return .local
+    }
+
+    func prepareLocalFallbackNotebook() throws {
+        let localURL = try makeLocalNotebookURL()
+        if fileManager.fileExists(atPath: localURL.path) {
+            let backupURL = localURL
+                .deletingLastPathComponent()
+                .appendingPathComponent("Notebook-recovery-\(ISO8601DateFormatter().string(from: Date())).json")
+            try? fileManager.moveItem(at: localURL, to: backupURL)
+        }
+        try write(notebook: StoredNotebook(pages: [StoredNotePage()]), to: localURL)
+        try markPendingLocalFallback()
     }
 
     private func loadNotebook(from fileURL: URL) throws -> StoredNotebook {
@@ -208,5 +248,27 @@ actor NoteStorage {
             .appendingPathComponent("Notes", isDirectory: true)
         try fileManager.createDirectory(at: notesURL, withIntermediateDirectories: true)
         return notesURL.appendingPathComponent(notebookFileName)
+    }
+
+    private func markerURL() throws -> URL {
+        try makeLocalNotebookURL()
+            .deletingLastPathComponent()
+            .appendingPathComponent(localFallbackMarkerFileName)
+    }
+
+    private func hasPendingLocalFallback() throws -> Bool {
+        let markerURL = try markerURL()
+        return fileManager.fileExists(atPath: markerURL.path)
+    }
+
+    private func markPendingLocalFallback() throws {
+        let markerURL = try markerURL()
+        try Data().write(to: markerURL, options: [.atomic])
+    }
+
+    private func clearPendingLocalFallback() throws {
+        let markerURL = try markerURL()
+        guard fileManager.fileExists(atPath: markerURL.path) else { return }
+        try fileManager.removeItem(at: markerURL)
     }
 }
