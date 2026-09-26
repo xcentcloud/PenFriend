@@ -84,8 +84,6 @@ final class NotesViewModel: ObservableObject {
     }
 
     func smoothCurrentDrawing() {
-        guard !isSmoothing else { return }
-
         let sourceDrawing = currentDrawing
         let sourceRevision = drawingRevision
         let useCustomModel = useCustomSmoothingModel

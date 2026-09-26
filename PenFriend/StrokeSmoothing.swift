@@ -231,9 +231,6 @@ final class CoreMLStrokeSmoothingPredictor: StrokeSmoothingPredicting {
         for (index, inputCount) in pointCounts.enumerated() {
             guard outputPointCounts[index].intValue == inputCount else { throw StrokePredictionError.invalidOutput }
         }
-        if let confidence, confidence.count != template.count {
-            throw StrokePredictionError.invalidOutput
-        }
         if let confidence, !hasValidConfidenceShape(confidence, expectedStrokeCount: template.count) {
             throw StrokePredictionError.invalidOutput
         }
