@@ -25,8 +25,14 @@ PenFriend is an iPad-first SwiftUI + PencilKit workspace for handwritten capture
 ## Open in Xcode
 
 1. Open `PenFriend.xcodeproj`.
-2. Select the `PenFriend` scheme.
+2. Select the shared `PenFriend` scheme.
 3. Run on an iPad simulator or device with Apple Pencil support.
+
+## Tests
+
+- Unit tests live in `PenFriendTests`.
+- In Xcode, run **Product > Test** using the `PenFriend` scheme.
+- From terminal (with Xcode tools installed): `xcodebuild test -project PenFriend.xcodeproj -scheme PenFriend -destination 'platform=iOS Simulator,name=iPad (10th generation)'`
 
 ## iCloud note storage
 
