@@ -8,14 +8,14 @@ enum PageLayoutStyle: String, CaseIterable, Identifiable, Codable {
     var id: String { rawValue }
 }
 
-enum MixedContentElementType: String, CaseIterable, Codable {
+enum MixedContentElementType: String, CaseIterable, Codable, Equatable {
     case text
     case shape
     case link
     case image
 }
 
-struct MixedContentElement: Identifiable, Codable {
+struct MixedContentElement: Identifiable, Codable, Equatable {
     struct Point: Codable, Equatable {
         var x: Double
         var y: Double

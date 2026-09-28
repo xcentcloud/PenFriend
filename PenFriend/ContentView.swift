@@ -75,7 +75,7 @@ struct ContentView: View {
             .onChange(of: viewModel.selectedPageIndex) { _, _ in
                 selectedElementID = nil
             }
-            .onChange(of: viewModel.currentPageElements.map(\.id)) { _, _ in
+            .onChange(of: viewModel.currentPageElements) { _, _ in
                 if let selectedElementID,
                    !viewModel.currentPageElements.contains(where: { $0.id == selectedElementID }) {
                     self.selectedElementID = nil
@@ -117,7 +117,10 @@ struct ContentView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
                     .accessibilityLabel("Link URL")
-                Button("Cancel", role: .cancel) { }
+                Button("Cancel", role: .cancel) {
+                    pendingLinkTitle = ""
+                    pendingLinkURL = "https://"
+                }
                 Button("Insert") {
                     let trimmedTitle = pendingLinkTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                     let trimmedURL = pendingLinkURL.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -389,6 +392,8 @@ private struct PageLayoutBackgroundView: View {
 }
 
 private struct MixedContentElementView: View {
+    private static let imageCache = NSCache<NSString, UIImage>()
+
     let element: MixedContentElement
     let isSelected: Bool
     let onSelect: () -> Void
@@ -519,9 +524,16 @@ private struct MixedContentElementView: View {
             decodedImage = nil
             return
         }
+        let cacheKey = element.id.uuidString
+        if let cachedImage = Self.imageCache.object(forKey: cacheKey as NSString) {
+            decodeTask?.cancel()
+            decodedImage = cachedImage
+            return
+        }
         guard let imageData = element.imageData else {
             decodeTask?.cancel()
             decodedImage = nil
+            Self.imageCache.removeObject(forKey: cacheKey as NSString)
             return
         }
         decodeTask?.cancel()
@@ -531,6 +543,9 @@ private struct MixedContentElementView: View {
             }.value
             guard !Task.isCancelled else { return }
             await MainActor.run {
+                if let image {
+                    Self.imageCache.setObject(image, forKey: cacheKey as NSString)
+                }
                 decodedImage = image
             }
         }
