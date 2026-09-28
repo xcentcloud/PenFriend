@@ -1,7 +1,6 @@
 import SwiftUI
 import PhotosUI
 import UIKit
-import CryptoKit
 import ImageIO
 
 struct ContentView: View {
@@ -641,9 +640,9 @@ private struct MixedContentElementView: View {
         guard let imageData = element.imageData else {
             return "\(element.id.uuidString)-none"
         }
-        let digest = SHA256.hash(data: imageData)
-        let digestString = digest.map { String(format: "%02x", $0) }.joined()
-        return "\(element.id.uuidString)-\(digestString)"
+        let roundedWidth = Int(element.size.width.rounded())
+        let roundedHeight = Int(element.size.height.rounded())
+        return "\(element.id.uuidString)-\(roundedWidth)x\(roundedHeight)-\(imageData.count)"
     }
 
     private var accessibilityLabel: String {
