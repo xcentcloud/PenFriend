@@ -392,6 +392,7 @@ final class NotesViewModel: ObservableObject {
     func removeElement(id: UUID) {
         guard pages.indices.contains(selectedPageIndex) else { return }
         pages[selectedPageIndex].elements.removeAll { $0.id == id }
+        normalizeZIndexesForCurrentPage()
         scheduleSavePages()
     }
 

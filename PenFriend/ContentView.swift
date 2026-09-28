@@ -76,7 +76,10 @@ struct ContentView: View {
                 selectedElementID = nil
             }
             .onChange(of: viewModel.currentPageElements.map(\.id)) { _, _ in
-                selectedElementID = nil
+                if let selectedElementID,
+                   !viewModel.currentPageElements.contains(where: { $0.id == selectedElementID }) {
+                    self.selectedElementID = nil
+                }
             }
             .onChange(of: selectedPhotoItem) { _, item in
                 guard let item else { return }
@@ -108,10 +111,12 @@ struct ContentView: View {
             .photosPicker(isPresented: $isPresentingImagePicker, selection: $selectedPhotoItem, matching: .images)
             .alert("Insert Link", isPresented: $isPresentingLinkComposer) {
                 TextField("Title", text: $pendingLinkTitle)
+                    .accessibilityLabel("Link title")
                 TextField("URL", text: $pendingLinkURL)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
+                    .accessibilityLabel("Link URL")
                 Button("Cancel", role: .cancel) { }
                 Button("Insert") {
                     let trimmedTitle = pendingLinkTitle.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -146,9 +151,9 @@ struct ContentView: View {
                     }
                     .disabled(!viewModel.canRedo)
                 }
-                .onDisappear {
-                    imageImportTask?.cancel()
-                }
+            }
+            .onDisappear {
+                imageImportTask?.cancel()
             }
         }
     }
@@ -248,6 +253,7 @@ struct ContentView: View {
                             )
                         )
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel("Selected element label")
                     }
 
                     if selectedElement.type == .link {
@@ -262,6 +268,7 @@ struct ContentView: View {
                         .autocorrectionDisabled(true)
                         .keyboardType(.URL)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel("Selected element URL")
 
                         if let url = linkURL(for: selectedElement) {
                             Button("Open Link") {
@@ -332,10 +339,13 @@ struct ContentView: View {
     private func normalizedLinkString(from rawURL: String) -> String? {
         guard !rawURL.isEmpty else { return nil }
         if let parsedURL = URL(string: rawURL), parsedURL.scheme != nil {
+            guard let scheme = parsedURL.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+                return nil
+            }
             return rawURL
         }
         let prefixed = "https://\(rawURL)"
-        guard URL(string: prefixed)?.host != nil else { return nil }
+        guard let parsedURL = URL(string: prefixed), parsedURL.host != nil else { return nil }
         return prefixed
     }
 
@@ -387,6 +397,7 @@ private struct MixedContentElementView: View {
     @State private var dragStartCenter: CGPoint?
     @State private var resizeStartSize: CGSize?
     @State private var decodedImage: UIImage?
+    @State private var decodeTask: Task<Void, Never>?
 
     var body: some View {
         content
@@ -410,6 +421,9 @@ private struct MixedContentElementView: View {
             }
             .onChange(of: element.imageData) { _, _ in
                 refreshDecodedImage()
+            }
+            .onDisappear {
+                decodeTask?.cancel()
             }
     }
 
@@ -501,14 +515,25 @@ private struct MixedContentElementView: View {
 
     private func refreshDecodedImage() {
         guard element.type == .image else {
+            decodeTask?.cancel()
             decodedImage = nil
             return
         }
         guard let imageData = element.imageData else {
+            decodeTask?.cancel()
             decodedImage = nil
             return
         }
-        decodedImage = UIImage(data: imageData)
+        decodeTask?.cancel()
+        decodeTask = Task {
+            let image = await Task.detached(priority: .utility) {
+                UIImage(data: imageData)
+            }.value
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                decodedImage = image
+            }
+        }
     }
 }
 
