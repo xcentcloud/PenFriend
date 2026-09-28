@@ -622,11 +622,13 @@ private struct MixedContentElementView: View {
         }
         decodeTask?.cancel()
         let requestToken = cacheKey
+        let requestElementID = element.id
         decodeTask = Task(priority: .utility) {
             let maxPixelSize = max(element.size.width.cgFloatValue, element.size.height.cgFloatValue) * UIScreen.main.scale
             let image = makeDownsampledImage(from: imageData, maxPixelSize: max(maxPixelSize, 1))
             guard !Task.isCancelled else { return }
             await MainActor.run {
+                guard requestElementID == element.id else { return }
                 guard requestToken == imageCacheToken else { return }
                 if let image {
                     Self.imageCache.setObject(image, forKey: requestToken as NSString)
@@ -642,7 +644,7 @@ private struct MixedContentElementView: View {
         }
         let roundedWidth = Int(element.size.width.rounded())
         let roundedHeight = Int(element.size.height.rounded())
-        return "\(element.id.uuidString)-\(roundedWidth)x\(roundedHeight)-\(imageData.count)"
+        return "\(element.id.uuidString)-\(roundedWidth)x\(roundedHeight)-\(imageData.hashValue)"
     }
 
     private var accessibilityLabel: String {
