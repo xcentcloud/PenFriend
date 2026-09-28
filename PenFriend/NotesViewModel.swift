@@ -122,6 +122,8 @@ final class NotesViewModel: ObservableObject {
     private var hasRestoredPages = false
     private let strokeSmoothingService = StrokeSmoothingService()
     private let noteStorage: any NoteStorageControlling
+    private let minElementWidth: CGFloat = 80
+    private let minElementHeight: CGFloat = 60
 
     init(noteStorage: any NoteStorageControlling = NoteStorage()) {
         self.noteStorage = noteStorage
@@ -397,13 +399,11 @@ final class NotesViewModel: ObservableObject {
     }
 
     func updateElementFrame(id: UUID, center: CGPoint, size: CGSize, in canvasSize: CGSize) {
-        let minWidth: CGFloat = 80
-        let minHeight: CGFloat = 60
-        let maxWidth = max(minWidth, canvasSize.width)
-        let maxHeight = max(minHeight, canvasSize.height)
+        let maxWidth = max(minElementWidth, canvasSize.width)
+        let maxHeight = max(minElementHeight, canvasSize.height)
         let clampedSize = CGSize(
-            width: min(max(size.width, minWidth), maxWidth),
-            height: min(max(size.height, minHeight), maxHeight)
+            width: min(max(size.width, minElementWidth), maxWidth),
+            height: min(max(size.height, minElementHeight), maxHeight)
         )
         let halfWidth = clampedSize.width / 2
         let halfHeight = clampedSize.height / 2

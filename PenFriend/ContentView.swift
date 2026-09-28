@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var imageImportStatus: String?
     @State private var imageImportTask: Task<Void, Never>?
     @State private var photoImportRequestID: UInt64 = 0
+    @AccessibilityFocusState private var isSelectionHeaderFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -135,6 +136,7 @@ struct ContentView: View {
                             selectedElementID = viewModel.addImageElement(data: data, in: workspaceSize)
                             imageImportStatus = "Inserted image."
                             selectedPhotoItem = nil
+                            isSelectionHeaderFocused = true
                         }
                     } catch {
                         guard !Task.isCancelled else { return }
@@ -173,6 +175,7 @@ struct ContentView: View {
                     }
                     selectedElementID = viewModel.addLinkElement(title: trimmedTitle, urlString: validatedURL, in: workspaceSize)
                     imageImportStatus = "Inserted link."
+                    isSelectionHeaderFocused = true
                     pendingLinkTitle = ""
                     pendingLinkURL = "https://"
                 }
@@ -258,9 +261,11 @@ struct ContentView: View {
             Menu {
                 Button("Text", systemImage: "text.alignleft") {
                     selectedElementID = viewModel.addTextElement(in: workspaceSize)
+                    isSelectionHeaderFocused = true
                 }
                 Button("Shape", systemImage: "square.on.circle") {
                     selectedElementID = viewModel.addShapeElement(in: workspaceSize)
+                    isSelectionHeaderFocused = true
                 }
                 Button("Link", systemImage: "link") {
                     isPresentingLinkComposer = true
@@ -279,6 +284,7 @@ struct ContentView: View {
                     HStack {
                         Text("Selected: \(selectedElement.type.rawValue.capitalized)")
                             .font(.footnote.weight(.semibold))
+                            .accessibilityFocused($isSelectionHeaderFocused)
                         Spacer()
                         Button("Smaller") {
                             resizeSelectedElement(selectedElement, scale: 0.9)
@@ -387,15 +393,17 @@ struct ContentView: View {
     }
 
     private func normalizedLinkString(from rawURL: String) -> String? {
-        guard !rawURL.isEmpty else { return nil }
-        if let parsedURL = URL(string: rawURL), parsedURL.scheme != nil {
+        let trimmedURL = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedURL.isEmpty else { return nil }
+        guard trimmedURL.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else { return nil }
+        if let parsedURL = URL(string: trimmedURL), parsedURL.scheme != nil {
             guard let scheme = parsedURL.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
                 return nil
             }
             guard parsedURL.host != nil else { return nil }
-            return rawURL
+            return trimmedURL
         }
-        let prefixed = "https://\(rawURL)"
+        let prefixed = "https://\(trimmedURL)"
         guard let parsedURL = URL(string: prefixed), parsedURL.host != nil else { return nil }
         return prefixed
     }
@@ -612,12 +620,14 @@ private struct MixedContentElementView: View {
             return
         }
         decodeTask?.cancel()
+        let requestToken = cacheKey
         decodeTask = Task(priority: .utility) {
             let image = UIImage(data: imageData)
             guard !Task.isCancelled else { return }
             await MainActor.run {
+                guard requestToken == imageCacheToken else { return }
                 if let image {
-                    Self.imageCache.setObject(image, forKey: cacheKey as NSString)
+                    Self.imageCache.setObject(image, forKey: requestToken as NSString)
                 }
                 decodedImage = image
             }
