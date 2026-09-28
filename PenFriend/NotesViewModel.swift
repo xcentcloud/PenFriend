@@ -1,13 +1,77 @@
 import Foundation
 import PencilKit
 
+enum PageLayoutStyle: String, CaseIterable, Identifiable, Codable {
+    case notebook = "Notebook"
+    case canvas = "Canvas"
+
+    var id: String { rawValue }
+}
+
+enum MixedContentElementType: String, CaseIterable, Codable {
+    case text
+    case shape
+    case link
+    case image
+}
+
+struct MixedContentElement: Identifiable, Codable {
+    struct Point: Codable, Equatable {
+        var x: Double
+        var y: Double
+    }
+
+    struct ElementSize: Codable, Equatable {
+        var width: Double
+        var height: Double
+    }
+
+    let id: UUID
+    var type: MixedContentElementType
+    var text: String
+    var urlString: String?
+    var imageData: Data?
+    var center: Point
+    var size: ElementSize
+    var zIndex: Int
+
+    init(
+        id: UUID = UUID(),
+        type: MixedContentElementType,
+        text: String,
+        urlString: String? = nil,
+        imageData: Data? = nil,
+        center: Point,
+        size: ElementSize,
+        zIndex: Int
+    ) {
+        self.id = id
+        self.type = type
+        self.text = text
+        self.urlString = urlString
+        self.imageData = imageData
+        self.center = center
+        self.size = size
+        self.zIndex = zIndex
+    }
+}
+
 struct NotePage: Identifiable {
     let id: UUID
     var drawing: PKDrawing
+    var layoutStyle: PageLayoutStyle
+    var elements: [MixedContentElement]
 
-    init(id: UUID = UUID(), drawing: PKDrawing = PKDrawing()) {
+    init(
+        id: UUID = UUID(),
+        drawing: PKDrawing = PKDrawing(),
+        layoutStyle: PageLayoutStyle = .notebook,
+        elements: [MixedContentElement] = []
+    ) {
         self.id = id
         self.drawing = drawing
+        self.layoutStyle = layoutStyle
+        self.elements = elements
     }
 }
 
@@ -66,6 +130,16 @@ final class NotesViewModel: ObservableObject {
 
     var pageLabel: String {
         "Page \(selectedPageIndex + 1) of \(pages.count)"
+    }
+
+    var currentPageLayoutStyle: PageLayoutStyle {
+        guard pages.indices.contains(selectedPageIndex) else { return .notebook }
+        return pages[selectedPageIndex].layoutStyle
+    }
+
+    var currentPageElements: [MixedContentElement] {
+        guard pages.indices.contains(selectedPageIndex) else { return [] }
+        return pages[selectedPageIndex].elements.sorted { $0.zIndex < $1.zIndex }
     }
 
     func restoreIfNeeded() async {
@@ -243,6 +317,105 @@ final class NotesViewModel: ObservableObject {
         if canRedo != newCanRedo { canRedo = newCanRedo }
     }
 
+    func setCurrentPageLayoutStyle(_ style: PageLayoutStyle) {
+        guard pages.indices.contains(selectedPageIndex) else { return }
+        guard pages[selectedPageIndex].layoutStyle != style else { return }
+        pages[selectedPageIndex].layoutStyle = style
+        scheduleSavePages()
+    }
+
+    @discardableResult
+    func addTextElement(in canvasSize: CGSize) -> UUID? {
+        addElement(
+            type: .text,
+            text: "New Text",
+            urlString: nil,
+            imageData: nil,
+            size: .init(width: 220, height: 90),
+            in: canvasSize
+        )
+    }
+
+    @discardableResult
+    func addShapeElement(in canvasSize: CGSize) -> UUID? {
+        addElement(
+            type: .shape,
+            text: "Shape",
+            urlString: nil,
+            imageData: nil,
+            size: .init(width: 200, height: 130),
+            in: canvasSize
+        )
+    }
+
+    @discardableResult
+    func addLinkElement(title: String, urlString: String, in canvasSize: CGSize) -> UUID? {
+        addElement(
+            type: .link,
+            text: title.isEmpty ? "Link" : title,
+            urlString: urlString,
+            imageData: nil,
+            size: .init(width: 260, height: 90),
+            in: canvasSize
+        )
+    }
+
+    @discardableResult
+    func addImageElement(data: Data, in canvasSize: CGSize) -> UUID? {
+        addElement(
+            type: .image,
+            text: "Image",
+            urlString: nil,
+            imageData: data,
+            size: .init(width: 240, height: 180),
+            in: canvasSize
+        )
+    }
+
+    func updateElementText(id: UUID, text: String) {
+        updateElement(id: id) { $0.text = text }
+    }
+
+    func updateElementURL(id: UUID, urlString: String) {
+        updateElement(id: id) { $0.urlString = urlString }
+    }
+
+    func bringElementToFront(id: UUID) {
+        guard pages.indices.contains(selectedPageIndex) else { return }
+        guard let elementIndex = pages[selectedPageIndex].elements.firstIndex(where: { $0.id == id }) else { return }
+        let maxZIndex = pages[selectedPageIndex].elements.map(\.zIndex).max() ?? 0
+        pages[selectedPageIndex].elements[elementIndex].zIndex = maxZIndex + 1
+        scheduleSavePages()
+    }
+
+    func removeElement(id: UUID) {
+        guard pages.indices.contains(selectedPageIndex) else { return }
+        pages[selectedPageIndex].elements.removeAll { $0.id == id }
+        scheduleSavePages()
+    }
+
+    func updateElementFrame(id: UUID, center: CGPoint, size: CGSize, in canvasSize: CGSize) {
+        let minWidth: CGFloat = 80
+        let minHeight: CGFloat = 60
+        let maxWidth = max(minWidth, canvasSize.width)
+        let maxHeight = max(minHeight, canvasSize.height)
+        let clampedSize = CGSize(
+            width: min(max(size.width, minWidth), maxWidth),
+            height: min(max(size.height, minHeight), maxHeight)
+        )
+        let halfWidth = clampedSize.width / 2
+        let halfHeight = clampedSize.height / 2
+        let clampedCenter = CGPoint(
+            x: min(max(center.x, halfWidth), max(halfWidth, canvasSize.width - halfWidth)),
+            y: min(max(center.y, halfHeight), max(halfHeight, canvasSize.height - halfHeight))
+        )
+
+        updateElement(id: id) { element in
+            element.center = .init(x: clampedCenter.x, y: clampedCenter.y)
+            element.size = .init(width: clampedSize.width, height: clampedSize.height)
+        }
+    }
+
     private func transitionDrawing(from previousDrawing: PKDrawing, to nextDrawing: PKDrawing, actionName: String) {
         undoManager?.registerUndo(withTarget: self) { target in
             target.transitionDrawing(from: nextDrawing, to: previousDrawing, actionName: actionName)
@@ -315,6 +488,44 @@ final class NotesViewModel: ObservableObject {
                 ? "Applied interpolation smoothing."
                 : "Interpolation smoothing made no visible changes."
         }
+    }
+
+    @discardableResult
+    private func addElement(
+        type: MixedContentElementType,
+        text: String,
+        urlString: String?,
+        imageData: Data?,
+        size: CGSize,
+        in canvasSize: CGSize
+    ) -> UUID? {
+        guard pages.indices.contains(selectedPageIndex) else { return nil }
+        let existingElementCount = pages[selectedPageIndex].elements.count
+        let maxZIndex = pages[selectedPageIndex].elements.map(\.zIndex).max() ?? -1
+        let offset = Double((existingElementCount % 6) * 24)
+        let center = MixedContentElement.Point(
+            x: max(Double(size.width / 2), Double(canvasSize.width / 2) + offset),
+            y: max(Double(size.height / 2), Double(canvasSize.height / 2) + offset)
+        )
+        let element = MixedContentElement(
+            type: type,
+            text: text,
+            urlString: urlString,
+            imageData: imageData,
+            center: center,
+            size: .init(width: size.width, height: size.height),
+            zIndex: maxZIndex + 1
+        )
+        pages[selectedPageIndex].elements.append(element)
+        scheduleSavePages()
+        return element.id
+    }
+
+    private func updateElement(id: UUID, mutation: (inout MixedContentElement) -> Void) {
+        guard pages.indices.contains(selectedPageIndex) else { return }
+        guard let elementIndex = pages[selectedPageIndex].elements.firstIndex(where: { $0.id == id }) else { return }
+        mutation(&pages[selectedPageIndex].elements[elementIndex])
+        scheduleSavePages()
     }
 
     deinit {

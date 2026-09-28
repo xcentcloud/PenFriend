@@ -48,10 +48,27 @@ private struct StoredNotebook: Codable {
 private struct StoredNotePage: Codable {
     var id: UUID
     var drawingData: Data
+    var layoutStyle: PageLayoutStyle
+    var elements: [MixedContentElement]
 
-    init(id: UUID = UUID(), drawingData: Data = PKDrawing().dataRepresentation()) {
+    init(
+        id: UUID = UUID(),
+        drawingData: Data = PKDrawing().dataRepresentation(),
+        layoutStyle: PageLayoutStyle = .notebook,
+        elements: [MixedContentElement] = []
+    ) {
         self.id = id
         self.drawingData = drawingData
+        self.layoutStyle = layoutStyle
+        self.elements = elements
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        drawingData = try container.decode(Data.self, forKey: .drawingData)
+        layoutStyle = try container.decodeIfPresent(PageLayoutStyle.self, forKey: .layoutStyle) ?? .notebook
+        elements = try container.decodeIfPresent([MixedContentElement].self, forKey: .elements) ?? []
     }
 }
 
@@ -238,7 +255,12 @@ actor NoteStorage: NoteStorageControlling {
         let notebook = StoredNotebook(
             revision: try nextRevision(localURL: localURL, iCloudURL: iCloudURL),
             pages: pagesToPersist.map { page in
-                StoredNotePage(id: page.id, drawingData: page.drawing.dataRepresentation())
+                StoredNotePage(
+                    id: page.id,
+                    drawingData: page.drawing.dataRepresentation(),
+                    layoutStyle: page.layoutStyle,
+                    elements: page.elements
+                )
             }
         )
 
@@ -276,7 +298,12 @@ actor NoteStorage: NoteStorageControlling {
 
     private func makePages(from notebook: StoredNotebook) throws -> [NotePage] {
         let pages = try notebook.pages.map { page in
-            try NotePage(id: page.id, drawing: PKDrawing(data: page.drawingData))
+            try NotePage(
+                id: page.id,
+                drawing: PKDrawing(data: page.drawingData),
+                layoutStyle: page.layoutStyle,
+                elements: page.elements
+            )
         }
         return pages.isEmpty ? [NotePage()] : pages
     }
