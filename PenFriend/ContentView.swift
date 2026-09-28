@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var pendingLinkURL = "https://"
     @State private var imageImportStatus: String?
     @State private var imageImportTask: Task<Void, Never>?
+    @State private var photoImportRequestID: UInt64 = 0
 
     var body: some View {
         NavigationStack {
@@ -113,22 +114,33 @@ struct ContentView: View {
             }
             .onChange(of: selectedPhotoItem) { _, item in
                 guard let item else { return }
+                photoImportRequestID &+= 1
+                let requestID = photoImportRequestID
                 imageImportTask?.cancel()
                 imageImportTask = Task {
-                    defer { Task { @MainActor in selectedPhotoItem = nil } }
+                    defer {
+                        Task { @MainActor in
+                            guard requestID == photoImportRequestID else { return }
+                            selectedPhotoItem = nil
+                        }
+                    }
                     do {
                         guard let data = try await item.loadTransferable(type: Data.self) else {
                             guard !Task.isCancelled else { return }
+                            guard requestID == photoImportRequestID else { return }
                             await MainActor.run { imageImportStatus = "Couldn't import image." }
                             return
                         }
                         guard !Task.isCancelled else { return }
+                        guard requestID == photoImportRequestID else { return }
                         await MainActor.run {
+                            guard requestID == photoImportRequestID else { return }
                             selectedElementID = viewModel.addImageElement(data: data, in: workspaceSize)
                             imageImportStatus = "Inserted image."
                         }
                     } catch {
                         guard !Task.isCancelled else { return }
+                        guard requestID == photoImportRequestID else { return }
                         await MainActor.run { imageImportStatus = "Couldn't import image." }
                     }
                 }
@@ -596,9 +608,12 @@ private struct MixedContentElementView: View {
         }
         decodeTask?.cancel()
         decodeTask = Task {
-            let image = await Task.detached(priority: .utility) {
-                UIImage(data: imageData)
-            }.value
+            let image = await withTaskGroup(of: UIImage?.self, returning: UIImage?.self) { group in
+                group.addTask {
+                    UIImage(data: imageData)
+                }
+                return await group.next() ?? nil
+            }
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 if let image {
