@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var pendingLinkTitle = ""
     @State private var pendingLinkURL = "https://"
     @State private var imageImportStatus: String?
+    @State private var imageImportTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -49,9 +50,6 @@ struct ContentView: View {
                                         size: newSize,
                                         in: workspaceSize
                                     )
-                                },
-                                onOpenLink: { url in
-                                    openURL(url)
                                 }
                             )
                         }
@@ -77,31 +75,34 @@ struct ContentView: View {
             .onChange(of: viewModel.selectedPageIndex) { _, _ in
                 selectedElementID = nil
             }
-            .onChange(of: viewModel.currentPageElements.map(\.id)) { _, ids in
-                if let selectedElementID, !ids.contains(selectedElementID) {
-                    self.selectedElementID = nil
-                }
+            .onChange(of: viewModel.currentPageElements.map(\.id)) { _, _ in
+                selectedElementID = nil
             }
             .onChange(of: selectedPhotoItem) { _, item in
                 guard let item else { return }
-                Task {
-                    defer {
-                        Task { @MainActor in
-                            selectedPhotoItem = nil
-                        }
-                    }
+                imageImportTask?.cancel()
+                imageImportTask = Task {
+                    defer { Task { @MainActor in selectedPhotoItem = nil } }
                     do {
                         guard let data = try await item.loadTransferable(type: Data.self) else {
+                            guard !Task.isCancelled else { return }
                             await MainActor.run { imageImportStatus = "Couldn't import image." }
                             return
                         }
+                        guard !Task.isCancelled else { return }
                         await MainActor.run {
                             selectedElementID = viewModel.addImageElement(data: data, in: workspaceSize)
                             imageImportStatus = "Inserted image."
                         }
                     } catch {
+                        guard !Task.isCancelled else { return }
                         await MainActor.run { imageImportStatus = "Couldn't import image." }
                     }
+                }
+            }
+            .onChange(of: imageImportStatus) { _, newStatus in
+                if let newStatus {
+                    AccessibilityNotification.Announcement(newStatus).post()
                 }
             }
             .photosPicker(isPresented: $isPresentingImagePicker, selection: $selectedPhotoItem, matching: .images)
@@ -113,11 +114,14 @@ struct ContentView: View {
                     .autocorrectionDisabled(true)
                 Button("Cancel", role: .cancel) { }
                 Button("Insert") {
-                    selectedElementID = viewModel.addLinkElement(
-                        title: pendingLinkTitle.trimmingCharacters(in: .whitespacesAndNewlines),
-                        urlString: pendingLinkURL.trimmingCharacters(in: .whitespacesAndNewlines),
-                        in: workspaceSize
-                    )
+                    let trimmedTitle = pendingLinkTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmedURL = pendingLinkURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard let validatedURL = normalizedLinkString(from: trimmedURL) else {
+                        imageImportStatus = "Invalid link URL."
+                        return
+                    }
+                    selectedElementID = viewModel.addLinkElement(title: trimmedTitle, urlString: validatedURL, in: workspaceSize)
+                    imageImportStatus = "Inserted link."
                     pendingLinkTitle = ""
                     pendingLinkURL = "https://"
                 }
@@ -141,6 +145,9 @@ struct ContentView: View {
                         viewModel.redo()
                     }
                     .disabled(!viewModel.canRedo)
+                }
+                .onDisappear {
+                    imageImportTask?.cancel()
                 }
             }
         }
@@ -218,6 +225,12 @@ struct ContentView: View {
                         Text("Selected: \(selectedElement.type.rawValue.capitalized)")
                             .font(.footnote.weight(.semibold))
                         Spacer()
+                        Button("Smaller") {
+                            resizeSelectedElement(selectedElement, scale: 0.9)
+                        }
+                        Button("Larger") {
+                            resizeSelectedElement(selectedElement, scale: 1.1)
+                        }
                         Button("Bring to Front") {
                             viewModel.bringElementToFront(id: selectedElement.id)
                         }
@@ -303,15 +316,36 @@ struct ContentView: View {
         return viewModel.currentPageElements.first { $0.id == selectedElementID }
     }
 
+    private func resizeSelectedElement(_ element: MixedContentElement, scale: CGFloat) {
+        let resized = CGSize(
+            width: element.size.width.cgFloatValue * scale,
+            height: element.size.height.cgFloatValue * scale
+        )
+        viewModel.updateElementFrame(
+            id: element.id,
+            center: CGPoint(x: element.center.x.cgFloatValue, y: element.center.y.cgFloatValue),
+            size: resized,
+            in: workspaceSize
+        )
+    }
+
+    private func normalizedLinkString(from rawURL: String) -> String? {
+        guard !rawURL.isEmpty else { return nil }
+        if let parsedURL = URL(string: rawURL), parsedURL.scheme != nil {
+            return rawURL
+        }
+        let prefixed = "https://\(rawURL)"
+        guard URL(string: prefixed)?.host != nil else { return nil }
+        return prefixed
+    }
+
     private func linkURL(for element: MixedContentElement) -> URL? {
         guard let rawURL = element.urlString?.trimmingCharacters(in: .whitespacesAndNewlines),
               !rawURL.isEmpty else {
             return nil
         }
-        if let url = URL(string: rawURL), url.scheme != nil {
-            return url
-        }
-        return URL(string: "https://\(rawURL)")
+        guard let normalizedURL = normalizedLinkString(from: rawURL) else { return nil }
+        return URL(string: normalizedURL)
     }
 }
 
@@ -349,10 +383,10 @@ private struct MixedContentElementView: View {
     let isSelected: Bool
     let onSelect: () -> Void
     let onFrameChange: (CGPoint, CGSize) -> Void
-    let onOpenLink: (URL) -> Void
 
     @State private var dragStartCenter: CGPoint?
     @State private var resizeStartSize: CGSize?
+    @State private var decodedImage: UIImage?
 
     var body: some View {
         content
@@ -371,6 +405,12 @@ private struct MixedContentElementView: View {
             }
             .gesture(dragGesture)
             .simultaneousGesture(magnificationGesture)
+            .onAppear {
+                refreshDecodedImage()
+            }
+            .onChange(of: element.imageData) { _, _ in
+                refreshDecodedImage()
+            }
     }
 
     @ViewBuilder
@@ -399,20 +439,19 @@ private struct MixedContentElementView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
-                if let url = normalizedURL {
-                    Button("Open") {
-                        onOpenLink(url)
-                    }
-                    .font(.caption.weight(.semibold))
-                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .padding(10)
         case .image:
-            if let data = element.imageData, let image = UIImage(data: data) {
-                Image(uiImage: image)
+            if let decodedImage {
+                Image(uiImage: decodedImage)
                     .resizable()
                     .scaledToFill()
+            } else if element.imageData != nil {
+                ZStack {
+                    Color.gray.opacity(0.12)
+                    ProgressView()
+                }
             } else {
                 ZStack {
                     Color.gray.opacity(0.12)
@@ -460,15 +499,16 @@ private struct MixedContentElementView: View {
             }
     }
 
-    private var normalizedURL: URL? {
-        guard let rawURL = element.urlString?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !rawURL.isEmpty else {
-            return nil
+    private func refreshDecodedImage() {
+        guard element.type == .image else {
+            decodedImage = nil
+            return
         }
-        if let url = URL(string: rawURL), url.scheme != nil {
-            return url
+        guard let imageData = element.imageData else {
+            decodedImage = nil
+            return
         }
-        return URL(string: "https://\(rawURL)")
+        decodedImage = UIImage(data: imageData)
     }
 }
 

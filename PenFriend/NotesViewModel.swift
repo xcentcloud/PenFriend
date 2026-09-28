@@ -385,6 +385,7 @@ final class NotesViewModel: ObservableObject {
         guard let elementIndex = pages[selectedPageIndex].elements.firstIndex(where: { $0.id == id }) else { return }
         let maxZIndex = pages[selectedPageIndex].elements.map(\.zIndex).max() ?? 0
         pages[selectedPageIndex].elements[elementIndex].zIndex = maxZIndex + 1
+        normalizeZIndexesForCurrentPage()
         scheduleSavePages()
     }
 
@@ -532,6 +533,21 @@ final class NotesViewModel: ObservableObject {
         guard let elementIndex = pages[selectedPageIndex].elements.firstIndex(where: { $0.id == id }) else { return }
         mutation(&pages[selectedPageIndex].elements[elementIndex])
         scheduleSavePages()
+    }
+
+    private func normalizeZIndexesForCurrentPage() {
+        guard pages.indices.contains(selectedPageIndex) else { return }
+        let sorted = pages[selectedPageIndex].elements.sorted { lhs, rhs in
+            if lhs.zIndex == rhs.zIndex {
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            return lhs.zIndex < rhs.zIndex
+        }
+        pages[selectedPageIndex].elements = sorted.enumerated().map { index, element in
+            var mutableElement = element
+            mutableElement.zIndex = index
+            return mutableElement
+        }
     }
 
     deinit {
