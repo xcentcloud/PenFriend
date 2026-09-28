@@ -1,6 +1,8 @@
 import SwiftUI
 import PhotosUI
 import UIKit
+import CryptoKit
+import ImageIO
 
 struct ContentView: View {
     @Environment(\.openURL) private var openURL
@@ -622,7 +624,8 @@ private struct MixedContentElementView: View {
         decodeTask?.cancel()
         let requestToken = cacheKey
         decodeTask = Task(priority: .utility) {
-            let image = UIImage(data: imageData)
+            let maxPixelSize = max(element.size.width.cgFloatValue, element.size.height.cgFloatValue) * UIScreen.main.scale
+            let image = makeDownsampledImage(from: imageData, maxPixelSize: max(maxPixelSize, 1))
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard requestToken == imageCacheToken else { return }
@@ -638,10 +641,9 @@ private struct MixedContentElementView: View {
         guard let imageData = element.imageData else {
             return "\(element.id.uuidString)-none"
         }
-        var hasher = Hasher()
-        hasher.combine(imageData.count)
-        hasher.combine(imageData.prefix(64))
-        return "\(element.id.uuidString)-\(hasher.finalize())"
+        let digest = SHA256.hash(data: imageData)
+        let digestString = digest.map { String(format: "%02x", $0) }.joined()
+        return "\(element.id.uuidString)-\(digestString)"
     }
 
     private var accessibilityLabel: String {
@@ -655,6 +657,22 @@ private struct MixedContentElementView: View {
         case .image:
             return "Image element"
         }
+    }
+
+    private func makeDownsampledImage(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
+        guard let imageSource = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return UIImage(data: data)
+        }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) else {
+            return UIImage(data: data)
+        }
+        return UIImage(cgImage: cgImage)
     }
 }
 
