@@ -50,6 +50,36 @@ struct ContentView: View {
                                         size: newSize,
                                         in: workspaceSize
                                     )
+                                },
+                                onMoveByStep: { delta in
+                                    let nextCenter = CGPoint(
+                                        x: element.center.x.cgFloatValue + delta.width,
+                                        y: element.center.y.cgFloatValue + delta.height
+                                    )
+                                    viewModel.updateElementFrame(
+                                        id: element.id,
+                                        center: nextCenter,
+                                        size: CGSize(width: element.size.width.cgFloatValue, height: element.size.height.cgFloatValue),
+                                        in: workspaceSize
+                                    )
+                                },
+                                onResizeByScale: { scale in
+                                    let nextSize = CGSize(
+                                        width: element.size.width.cgFloatValue * scale,
+                                        height: element.size.height.cgFloatValue * scale
+                                    )
+                                    viewModel.updateElementFrame(
+                                        id: element.id,
+                                        center: CGPoint(x: element.center.x.cgFloatValue, y: element.center.y.cgFloatValue),
+                                        size: nextSize,
+                                        in: workspaceSize
+                                    )
+                                },
+                                onRemove: {
+                                    if selectedElementID == element.id {
+                                        selectedElementID = nil
+                                    }
+                                    viewModel.removeElement(id: element.id)
                                 }
                             )
                         }
@@ -345,6 +375,7 @@ struct ContentView: View {
             guard let scheme = parsedURL.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
                 return nil
             }
+            guard parsedURL.host != nil else { return nil }
             return rawURL
         }
         let prefixed = "https://\(rawURL)"
@@ -398,6 +429,9 @@ private struct MixedContentElementView: View {
     let isSelected: Bool
     let onSelect: () -> Void
     let onFrameChange: (CGPoint, CGSize) -> Void
+    let onMoveByStep: (CGSize) -> Void
+    let onResizeByScale: (CGFloat) -> Void
+    let onRemove: () -> Void
 
     @State private var dragStartCenter: CGPoint?
     @State private var resizeStartSize: CGSize?
@@ -424,11 +458,35 @@ private struct MixedContentElementView: View {
             .onAppear {
                 refreshDecodedImage()
             }
-            .onChange(of: element.imageData) { _, _ in
+            .onChange(of: imageCacheToken) { _, _ in
                 refreshDecodedImage()
             }
             .onDisappear {
                 decodeTask?.cancel()
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint("Drag to move, pinch to resize, or use accessibility actions.")
+            .accessibilityAction(named: "Move Left") {
+                onMoveByStep(CGSize(width: -20, height: 0))
+            }
+            .accessibilityAction(named: "Move Right") {
+                onMoveByStep(CGSize(width: 20, height: 0))
+            }
+            .accessibilityAction(named: "Move Up") {
+                onMoveByStep(CGSize(width: 0, height: -20))
+            }
+            .accessibilityAction(named: "Move Down") {
+                onMoveByStep(CGSize(width: 0, height: 20))
+            }
+            .accessibilityAction(named: "Smaller") {
+                onResizeByScale(0.9)
+            }
+            .accessibilityAction(named: "Larger") {
+                onResizeByScale(1.1)
+            }
+            .accessibilityAction(named: "Remove Element") {
+                onRemove()
             }
     }
 
@@ -524,7 +582,7 @@ private struct MixedContentElementView: View {
             decodedImage = nil
             return
         }
-        let cacheKey = element.id.uuidString
+        let cacheKey = imageCacheToken
         if let cachedImage = Self.imageCache.object(forKey: cacheKey as NSString) {
             decodeTask?.cancel()
             decodedImage = cachedImage
@@ -548,6 +606,29 @@ private struct MixedContentElementView: View {
                 }
                 decodedImage = image
             }
+        }
+    }
+
+    private var imageCacheToken: String {
+        guard let imageData = element.imageData else {
+            return "\(element.id.uuidString)-none"
+        }
+        var hasher = Hasher()
+        hasher.combine(imageData.count)
+        hasher.combine(imageData.prefix(64))
+        return "\(element.id.uuidString)-\(hasher.finalize())"
+    }
+
+    private var accessibilityLabel: String {
+        switch element.type {
+        case .text:
+            return "Text element"
+        case .shape:
+            return "Shape element"
+        case .link:
+            return "Link element"
+        case .image:
+            return "Image element"
         }
     }
 }
