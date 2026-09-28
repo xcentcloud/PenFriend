@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var selectedElementID: UUID?
     @State private var workspaceSize = CGSize(width: 1024, height: 768)
     @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var isPresentingImagePicker = false
     @State private var isPresentingLinkComposer = false
     @State private var pendingLinkTitle = ""
     @State private var pendingLinkURL = "https://"
@@ -84,6 +85,11 @@ struct ContentView: View {
             .onChange(of: selectedPhotoItem) { _, item in
                 guard let item else { return }
                 Task {
+                    defer {
+                        Task { @MainActor in
+                            selectedPhotoItem = nil
+                        }
+                    }
                     do {
                         guard let data = try await item.loadTransferable(type: Data.self) else {
                             await MainActor.run { imageImportStatus = "Couldn't import image." }
@@ -96,12 +102,9 @@ struct ContentView: View {
                     } catch {
                         await MainActor.run { imageImportStatus = "Couldn't import image." }
                     }
-
-                    await MainActor.run {
-                        selectedPhotoItem = nil
-                    }
                 }
             }
+            .photosPicker(isPresented: $isPresentingImagePicker, selection: $selectedPhotoItem, matching: .images)
             .alert("Insert Link", isPresented: $isPresentingLinkComposer) {
                 TextField("Title", text: $pendingLinkTitle)
                 TextField("URL", text: $pendingLinkURL)
@@ -192,24 +195,21 @@ struct ContentView: View {
             }
             .pickerStyle(.segmented)
 
-            HStack {
-                Menu {
-                    Button("Text", systemImage: "text.alignleft") {
-                        selectedElementID = viewModel.addTextElement(in: workspaceSize)
-                    }
-                    Button("Shape", systemImage: "square.on.circle") {
-                        selectedElementID = viewModel.addShapeElement(in: workspaceSize)
-                    }
-                    Button("Link", systemImage: "link") {
-                        isPresentingLinkComposer = true
-                    }
-                } label: {
-                    Label("Insert", systemImage: "plus")
+            Menu {
+                Button("Text", systemImage: "text.alignleft") {
+                    selectedElementID = viewModel.addTextElement(in: workspaceSize)
                 }
-
-                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                    Label("Image", systemImage: "photo")
+                Button("Shape", systemImage: "square.on.circle") {
+                    selectedElementID = viewModel.addShapeElement(in: workspaceSize)
                 }
+                Button("Link", systemImage: "link") {
+                    isPresentingLinkComposer = true
+                }
+                Button("Image", systemImage: "photo") {
+                    isPresentingImagePicker = true
+                }
+            } label: {
+                Label("Insert", systemImage: "plus")
             }
 
             if let selectedElement = selectedElement {

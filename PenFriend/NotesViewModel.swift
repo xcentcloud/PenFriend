@@ -503,9 +503,15 @@ final class NotesViewModel: ObservableObject {
         let existingElementCount = pages[selectedPageIndex].elements.count
         let maxZIndex = pages[selectedPageIndex].elements.map(\.zIndex).max() ?? -1
         let offset = Double((existingElementCount % 6) * 24)
+        let halfWidth = max(Double(size.width / 2), 40)
+        let halfHeight = max(Double(size.height / 2), 30)
+        let maxCenterX = max(halfWidth, Double(canvasSize.width) - halfWidth)
+        let maxCenterY = max(halfHeight, Double(canvasSize.height) - halfHeight)
+        let proposedX = Double(canvasSize.width / 2) + offset
+        let proposedY = Double(canvasSize.height / 2) + offset
         let center = MixedContentElement.Point(
-            x: max(Double(size.width / 2), Double(canvasSize.width / 2) + offset),
-            y: max(Double(size.height / 2), Double(canvasSize.height / 2) + offset)
+            x: min(max(proposedX, halfWidth), maxCenterX),
+            y: min(max(proposedY, halfHeight), maxCenterY)
         )
         let element = MixedContentElement(
             type: type,
