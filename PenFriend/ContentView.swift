@@ -118,17 +118,14 @@ struct ContentView: View {
                 let requestID = photoImportRequestID
                 imageImportTask?.cancel()
                 imageImportTask = Task {
-                    defer {
-                        Task { @MainActor in
-                            guard requestID == photoImportRequestID else { return }
-                            selectedPhotoItem = nil
-                        }
-                    }
                     do {
                         guard let data = try await item.loadTransferable(type: Data.self) else {
                             guard !Task.isCancelled else { return }
                             guard requestID == photoImportRequestID else { return }
-                            await MainActor.run { imageImportStatus = "Couldn't import image." }
+                            await MainActor.run {
+                                imageImportStatus = "Couldn't import image."
+                                selectedPhotoItem = nil
+                            }
                             return
                         }
                         guard !Task.isCancelled else { return }
@@ -137,11 +134,15 @@ struct ContentView: View {
                             guard requestID == photoImportRequestID else { return }
                             selectedElementID = viewModel.addImageElement(data: data, in: workspaceSize)
                             imageImportStatus = "Inserted image."
+                            selectedPhotoItem = nil
                         }
                     } catch {
                         guard !Task.isCancelled else { return }
                         guard requestID == photoImportRequestID else { return }
-                        await MainActor.run { imageImportStatus = "Couldn't import image." }
+                        await MainActor.run {
+                            imageImportStatus = "Couldn't import image."
+                            selectedPhotoItem = nil
+                        }
                     }
                 }
             }
@@ -251,6 +252,8 @@ struct ContentView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .accessibilityLabel("Page layout style")
+            .accessibilityHint("Choose notebook lines or freeform canvas background.")
 
             Menu {
                 Button("Text", systemImage: "text.alignleft") {
@@ -268,6 +271,8 @@ struct ContentView: View {
             } label: {
                 Label("Insert", systemImage: "plus")
             }
+            .accessibilityLabel("Insert mixed content")
+            .accessibilityHint("Insert text, shape, link, or image elements.")
 
             if let selectedElement = selectedElement {
                 VStack(alignment: .leading, spacing: 8) {
@@ -607,13 +612,8 @@ private struct MixedContentElementView: View {
             return
         }
         decodeTask?.cancel()
-        decodeTask = Task {
-            let image = await withTaskGroup(of: UIImage?.self, returning: UIImage?.self) { group in
-                group.addTask {
-                    UIImage(data: imageData)
-                }
-                return await group.next() ?? nil
-            }
+        decodeTask = Task(priority: .utility) {
+            let image = UIImage(data: imageData)
             guard !Task.isCancelled else { return }
             await MainActor.run {
                 if let image {
